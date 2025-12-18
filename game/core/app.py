@@ -43,7 +43,7 @@ class App:
             InputTestScene(),
             AssetsTestScene()
         ]
-        self.scene: Scene = self.scenes[1]
+        self.scene: Scene = self.scenes[2]
 
         console.print(Panel.fit("✅ Pygame initialized", border_style="green"))
 
