@@ -1,7 +1,7 @@
 
-from .eye import TestEye
+from .eye import Eye
 from .mouth import Mouth
 __all__ = [
-    "TestEye",
+    "Eye",
     "Mouth",
 ]

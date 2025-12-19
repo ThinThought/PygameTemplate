@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+import json
+from pathlib import Path
+import time
 import pygame
 
 from game.scenes.base import Scene
@@ -30,6 +33,12 @@ class InputTesterScene(Scene):
 
         self.deadzone = 0.20
 
+        root = Path(__file__).resolve().parents[2]
+        self._joystick_cfg_path = root / "configs" / "input_tester_joystick.json"
+        self._snapshot_dirty = False
+        self._snapshot_cooldown = 0.25  # segs entre escrituras en disco
+        self._last_snapshot = time.monotonic()
+
     def on_enter(self, app) -> None:
         pygame.joystick.init()
         self._discover_joysticks()
@@ -51,7 +60,6 @@ class InputTesterScene(Scene):
 
         for i in range(pygame.joystick.get_count()):
             js = pygame.joystick.Joystick(i)
-            js.init()
             self.joysticks.append(js)
             self.joy_infos.append(
                 JoyInfo(
@@ -63,9 +71,68 @@ class InputTesterScene(Scene):
                 )
             )
         self.active_joy = 0 if self.joysticks else 0
+        self._mark_snapshot_dirty()
 
     def _push(self, msg: str) -> None:
         self.events.appendleft(msg)
+
+    def _mark_snapshot_dirty(self) -> None:
+        self._snapshot_dirty = True
+
+    def _joystick_snapshot(self) -> dict[str, object]:
+        data = {
+            "joysticks": [
+                {
+                    "index": info.idx,
+                    "name": info.name,
+                    "axes": info.axes,
+                    "buttons": info.buttons,
+                    "hats": info.hats,
+                }
+                for info in self.joy_infos
+            ],
+            "active_index": self.active_joy if self.joysticks else None,
+        }
+
+        if self.joysticks:
+            info = self.joy_infos[self.active_joy]
+            js = self.joysticks[self.active_joy]
+            data["active_joystick"] = {
+                "index": info.idx,
+                "name": info.name,
+                "axes": info.axes,
+                "axis_values": [float(js.get_axis(i)) for i in range(info.axes)],
+                "buttons": info.buttons,
+                "buttons_pressed": [i for i in range(info.buttons) if js.get_button(i)],
+                "hats": info.hats,
+                "hat_values": [list(js.get_hat(i)) for i in range(info.hats)],
+                "deadzone": self.deadzone,
+            }
+        else:
+            data["active_joystick"] = None
+
+        return data
+
+    def _flush_snapshot(self) -> None:
+        snapshot = self._joystick_snapshot()
+        self._joystick_cfg_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            self._joystick_cfg_path.write_text(json.dumps(snapshot, indent=2))
+        except OSError as exc:
+            self._push(f"No se pudo guardar joystick en configs: {exc}")
+        else:
+            self._snapshot_dirty = False
+            self._last_snapshot = time.monotonic()
+
+    def _maybe_write_snapshot(self) -> None:
+        if not self._snapshot_dirty:
+            return
+
+        now = time.monotonic()
+        if now - self._last_snapshot < self._snapshot_cooldown:
+            return
+
+        self._flush_snapshot()
 
     def handle_event(self, app, ev: pygame.event.Event) -> None:
         if ev.type == pygame.QUIT:
@@ -87,6 +154,7 @@ class InputTesterScene(Scene):
             if ev.key == pygame.K_TAB and self.joysticks:
                 self.active_joy = (self.active_joy + 1) % len(self.joysticks)
                 self._push(f"Active joy -> {self.active_joy} ({self.joy_infos[self.active_joy].name})")
+                self._mark_snapshot_dirty()
                 return
 
             self._push(f"KEYDOWN key={ev.key}")
@@ -97,15 +165,22 @@ class InputTesterScene(Scene):
 
         elif ev.type == pygame.JOYBUTTONDOWN:
             self._push(f"JOY{ev.joy} BUTTONDOWN b={ev.button}")
+            self._mark_snapshot_dirty()
 
         elif ev.type == pygame.JOYBUTTONUP:
             self._push(f"JOY{ev.joy} BUTTONUP b={ev.button}")
+            self._mark_snapshot_dirty()
 
         elif ev.type == pygame.JOYHATMOTION:
             self._push(f"JOY{ev.joy} HAT v={ev.value}")
+            self._mark_snapshot_dirty()
 
         elif ev.type == pygame.JOYAXISMOTION:
             self._push(f"JOY{ev.joy} AXIS a={ev.axis} v={ev.value:+.3f}")
+            self._mark_snapshot_dirty()
+
+    def update(self, app, dt: float) -> None:
+        self._maybe_write_snapshot()
 
     def render(self, app, screen: pygame.Surface) -> None:
         w, h = screen.get_size()

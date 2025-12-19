@@ -2,7 +2,7 @@ import pygame
 from game.entities.base import Entity, AppLike
 
 
-class TestEye(Entity):
+class Eye(Entity):
     def __init__(self, pos):
         self.pos = pygame.Vector2(pos)
         self.radius = 22
