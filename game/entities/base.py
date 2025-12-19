@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+
 from typing import Protocol
 import pygame
 
@@ -23,6 +25,10 @@ class Entity:
 
     def on_despawn(self, app: AppLike) -> None:
         """Se llama cuando la entidad sale de escena."""
+        pass
+
+    def handle_event(self, app: AppLike, ev: pygame.event.Event):
+        """propagar el evento a la entidad"""
         pass
 
     def update(self, app: AppLike, dt: float) -> None:

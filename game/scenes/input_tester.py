@@ -16,7 +16,7 @@ class JoyInfo:
     hats: int
 
 
-class InputTestScene(Scene):
+class InputTesterScene(Scene):
     def __init__(self) -> None:
         self.font: pygame.font.Font | None = None
         self.small: pygame.font.Font | None = None
