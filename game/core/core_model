@@ -1,0 +1,28 @@
+"""
+The Entity-Environment Interaction Model
+
+Es un modelo que ahora mismo utiliza dos entidades basicas para
+la construccion de un juego: Environment y Entity.
+
+Los principios son simples:
+
+Environment:
+- Representa espacios y entornos. Un espacio puede tener reglas fisicas o declarar un entorno que afecta de manera
+directa a un jugador o entidad.
+- Existe el Environment Vacio, que no tiene ninguna regla que afecte a las entidades hijas.
+- Un environment no puede contener otro environment, pero si puede sumar las caracteristicas de otros environments.
+- Imaginar que de forma basica el tree del juego es: App -> Scene -> Environment -> Entity
+                                                                         +
+                                                                  -> Environment -> Entity
+
+Los environments interactuan entre si sumando sus caracteristicas para con sus entidades hijas, pero las entidades de dos environments no pueden interactuar entre si.
+
+
+
+Entity:
+- La entidad siempre nace dentro de un Environment.
+- Representa objetos interactivos dentro del entorno. Pueden ser personajes, items, obstaculos, etc.
+La entidad puede ser dotada de cualquier tipo variable o componente que la habilite para interactuar con un entorno del cual es hija.
+- La entidad puede tener estar dotada de environments, que permiten la creacion de otras entidades.
+
+"""

@@ -19,6 +19,6 @@ class BlackZone(Environment):
 
         pygame.draw.rect(
             screen,
-            "gray20",
+            "black",
             pygame.Rect(x - w // 2, y - h // 2, w, h)
         )

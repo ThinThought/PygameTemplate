@@ -4,22 +4,13 @@ import pygame
 from game.scenes.base import Scene, AppLike
 import game.entities as entities
 import game.environments as environments
+from game.editor import EditorModel, PaletteRegistry, PaletteItem
 
 
 class EditorScene(Scene):
     def __init__(self) -> None:
-        self.entities: list[object] = []
-        self.entity_labels: list[str] = []
-        self.selected = 0
-
-        self.available_entities: list[tuple[str, type]] = [
-            (name, getattr(entities, name))
-            for name in entities.__all__
-        ]
-        self.available_environments: list[tuple[str, type]] = [
-            (name, getattr(environments, name))
-            for name in getattr(environments, "__all__", [])
-        ]
+        self.registry = PaletteRegistry.from_modules(entities, environments)
+        self.model = EditorModel(self.registry)
 
         self.dragging = False
         self.drag_mode: str | None = None
@@ -33,6 +24,9 @@ class EditorScene(Scene):
         self.palette_item_h = 28
         self.entity_items_rects: list[pygame.Rect] = []
         self.environment_items_rects: list[pygame.Rect] = []
+        self.tree_rect = pygame.Rect(0, 0, 0, 0)
+        self.attrs_rect = pygame.Rect(0, 0, 0, 0)
+        self._tree_hitboxes: list[tuple[pygame.Rect, int]] = []
 
         self._last_size: tuple[int, int] | None = None
 
@@ -75,13 +69,22 @@ class EditorScene(Scene):
         insp_h = self.inspector_rect.bottom - insp_y
         self.inspector_rect = pygame.Rect(self.inspector_rect.x, insp_y, self.inspector_rect.width, insp_h)
 
+        tree_h = min(max(120, int(self.inspector_rect.height * 0.45)), self.inspector_rect.height)
+        attr_y = self.inspector_rect.y + tree_h + gap
+        attr_y = min(attr_y, self.inspector_rect.bottom)
+        attr_h = max(0, self.inspector_rect.bottom - attr_y)
+
+        self.tree_rect = pygame.Rect(self.inspector_rect.x, self.inspector_rect.y, self.inspector_rect.width, tree_h)
+        self.attrs_rect = pygame.Rect(self.inspector_rect.x, attr_y, self.inspector_rect.width, attr_h)
+        self._tree_hitboxes = []
+
         self._rebuild_palette_item_rects()
 
     def _rebuild_palette_item_rects(self) -> None:
-        self.entity_items_rects = self._build_palette_rects(self.entities_palette_rect, len(self.available_entities))
+        self.entity_items_rects = self._build_palette_rects(self.entities_palette_rect, len(self.registry.entities))
         self.environment_items_rects = self._build_palette_rects(
             self.environments_palette_rect,
-            len(self.available_environments),
+            len(self.registry.environments),
         )
 
     def _build_palette_rects(self, rect: pygame.Rect, count: int) -> list[pygame.Rect]:
@@ -102,8 +105,10 @@ class EditorScene(Scene):
     # ---------------- Update / Events ----------------
 
     def update(self, app: AppLike, dt: float) -> None:
-        for entity in self.entities:
-            entity.update(app, dt)
+        for node in self.model.iter_drawable_nodes():
+            updater = getattr(node.payload, "update", None)
+            if callable(updater):
+                updater(app, dt)
 
     # (tu handle_event lo puedes mantener, pero recuerda: VIDEORESIZE en escenas no hace falta si el core gestiona)
     # y recuerda convertir mouse a local si usas viewport/hud.
@@ -127,18 +132,20 @@ class EditorScene(Scene):
         prev_clip = screen.get_clip()
         screen.set_clip(self.canvas_rect.inflate(-4, -4))
 
-        for i, ent in enumerate(self.entities):
-            ent.render(app, screen)
-            if i == self.selected:
-                self._render_selection_ring(screen, ent)
+        for node in self.model.iter_drawable_nodes():
+            renderer = getattr(node.payload, "render", None)
+            if callable(renderer):
+                renderer(app, screen)
+            if node.id == self.model.selected_id:
+                self._render_selection_ring(screen, node)
 
         screen.set_clip(prev_clip)
 
-    def _render_selection_ring(self, screen: pygame.Surface, ent: object) -> None:
-        p = getattr(ent, "pos", None)
+    def _render_selection_ring(self, screen: pygame.Surface, node) -> None:
+        p = getattr(node.payload, "pos", None)
         if p is None:
             return
-        r = int(getattr(ent, "radius", 26)) + 6
+        r = int(getattr(node.payload, "radius", 26)) + 6
         pygame.draw.circle(screen, (255, 200, 0), (int(p.x), int(p.y)), r, 2)
 
     def _render_palettes(self, app: AppLike, screen: pygame.Surface) -> None:
@@ -147,7 +154,7 @@ class EditorScene(Scene):
             screen,
             self.entities_palette_rect,
             "Entities",
-            self.available_entities,
+            self.registry.entities,
             self.entity_items_rects,
             mouse,
         )
@@ -155,7 +162,7 @@ class EditorScene(Scene):
             screen,
             self.environments_palette_rect,
             "Environments",
-            self.available_environments,
+            self.registry.environments,
             self.environment_items_rects,
             mouse,
         )
@@ -165,7 +172,7 @@ class EditorScene(Scene):
         screen: pygame.Surface,
         rect: pygame.Rect,
         title: str,
-        items: list[tuple[str, type]],
+        items: list[PaletteItem],
         item_rects: list[pygame.Rect],
         mouse_pos: tuple[int, int],
     ) -> None:
@@ -174,30 +181,74 @@ class EditorScene(Scene):
         pygame.draw.rect(screen, (30, 30, 30), rect, border_radius=6)
         self._draw_section_header(screen, rect, title)
 
-        for i, (name, _factory) in enumerate(items):
+        for i, item in enumerate(items):
             if i >= len(item_rects):
                 break
             r = item_rects[i]
             hovered = r.collidepoint(mouse_pos)
             col = (55, 55, 55) if hovered else (45, 45, 45)
             pygame.draw.rect(screen, col, r, border_radius=6)
-            t = self.font_mono.render(name, True, (220, 220, 220))
+            t = self.font_mono.render(item.name, True, (220, 220, 220))
             screen.blit(t, (r.x + 8, r.y + 6))
 
     def _render_inspector(self, app: AppLike, screen: pygame.Surface) -> None:
-        pygame.draw.rect(screen, (30, 30, 30), self.inspector_rect, border_radius=6)
-        self._draw_section_header(screen, self.inspector_rect, "Atribs")
+        self._render_tree_panel(screen)
+        self._render_attrs_panel(screen)
 
-        if not self.entities:
-            self._draw_empty_inspector(screen)
+    def _render_tree_panel(self, screen: pygame.Surface) -> None:
+        rect = self.tree_rect
+        if rect.width <= 0 or rect.height <= 0:
+            self._tree_hitboxes = []
             return
 
-        ent = self.entities[self.selected]
-        self._draw_attrs(screen, self.inspector_rect, ent, self._selected_label())
+        pygame.draw.rect(screen, (30, 30, 30), rect, border_radius=6)
+        self._draw_section_header(screen, rect, "Tree")
 
-    def _draw_empty_inspector(self, screen: pygame.Surface) -> None:
+        y = rect.y + 36
+        line_h = 20
+        max_y = rect.bottom - 8
+        self._tree_hitboxes = []
+
+        for depth, node in self.model.iter_tree():
+            if y > max_y:
+                break
+
+            line_rect = pygame.Rect(rect.x + 6, y - 2, rect.width - 12, line_h)
+            is_selected = node.id == self.model.selected_id
+            if is_selected:
+                pygame.draw.rect(screen, (80, 70, 30), line_rect, border_radius=4)
+
+            indent = depth * 14
+            text_x = rect.x + 12 + indent
+            text = node.name
+            if node.kind in ("entity", "environment"):
+                tag = " [Ent]" if node.kind == "entity" else " [Env]"
+                text = f"{node.name}{tag}"
+            color = (255, 220, 160) if is_selected else (210, 210, 210)
+            t = self.font_mono.render(text, True, color)
+            screen.blit(t, (text_x, y))
+
+            self._tree_hitboxes.append((line_rect.copy(), node.id))
+            y += line_h
+
+    def _render_attrs_panel(self, screen: pygame.Surface) -> None:
+        rect = self.attrs_rect
+        if rect.width <= 0 or rect.height <= 0:
+            return
+
+        pygame.draw.rect(screen, (30, 30, 30), rect, border_radius=6)
+        self._draw_section_header(screen, rect, "Atribs")
+
+        node = self.model.selected_node()
+        if node is None:
+            self._draw_empty_inspector(screen, rect)
+            return
+
+        self._draw_attrs(screen, rect, node, self._selected_label())
+
+    def _draw_empty_inspector(self, screen: pygame.Surface, rect: pygame.Rect) -> None:
         msg = self.font_mono.render("No entities. Pick one from palette.", True, (160, 160, 160))
-        screen.blit(msg, (self.inspector_rect.x + 10, self.inspector_rect.y + 40))
+        screen.blit(msg, (rect.x + 10, rect.y + 40))
 
     # ---------------- Utilities ----------------
 
@@ -219,19 +270,28 @@ class EditorScene(Scene):
             1
         )
 
-    def _draw_attrs(self, screen: pygame.Surface, rect: pygame.Rect, ent, label: str) -> None:
+    def _draw_attrs(self, screen: pygame.Surface, rect: pygame.Rect, node, label: str) -> None:
         y = rect.y + 36
         xk = rect.x + 10
         xv = rect.x + rect.width // 2
 
+        entries: list[tuple[str, str]] = []
         if label:
-            ksurf = self.font_mono.render("Nombre", True, (200, 200, 200))
-            vsurf = self.font_mono.render(label, True, (220, 200, 160))
+            entries.append(("Nombre", label))
+        entries.append(("Tipo", node.kind.title()))
+        parent_label = self.model.parent_label(node.id) or "Scene Root"
+        entries.append(("Parent", parent_label))
+        children = ", ".join(self.model.child_labels(node.id)) or "-"
+        entries.append(("Hijos", children))
+
+        for key, value in entries:
+            ksurf = self.font_mono.render(key, True, (200, 200, 200))
+            vsurf = self.font_mono.render(value, True, (220, 200, 160))
             screen.blit(ksurf, (xk, y))
             screen.blit(vsurf, (xv, y))
             y += 20
 
-        for k, v in self._iter_public_attrs(ent):
+        for k, v in self._iter_public_attrs(node.payload):
             if y > rect.bottom - 10:
                 break
             ksurf = self.font_mono.render(k, True, (200, 200, 200))
@@ -242,6 +302,8 @@ class EditorScene(Scene):
 
     def _iter_public_attrs(self, obj) -> list[tuple[str, str]]:
         items: list[tuple[str, str]] = []
+        if obj is None:
+            return items
         d = getattr(obj, "__dict__", {})
         for k in sorted(d.keys()):
             if k.startswith("_"):
@@ -279,9 +341,13 @@ class EditorScene(Scene):
                 self._spawn_from_palette(target, idx, pos)
                 return
 
-            # 2) canvas -> select + drag
+            # 2) tree view -> select
+            if self._tree_hit(pos):
+                return
+
+            # 3) canvas -> select + drag
             if self.canvas_rect.collidepoint(pos):
-                hit = self._select_entity_at(pos)
+                hit = self._select_node_at(pos)
                 if hit is not None:
                     self._start_drag_existing(pos)
                 return
@@ -297,8 +363,8 @@ class EditorScene(Scene):
             return
 
         # passthrough
-        for ent in self.entities:
-            h = getattr(ent, "handle_event", None)
+        for node in self.model.iter_drawable_nodes():
+            h = getattr(node.payload, "handle_event", None)
             if callable(h):
                 h(app, ev)
 
@@ -336,52 +402,42 @@ class EditorScene(Scene):
                 return (target, i)
         return None
 
+    # ---------- Tree panel ----------
+
+    def _tree_hit(self, pos: tuple[int, int]) -> bool:
+        if self.tree_rect.width <= 0 or self.tree_rect.height <= 0:
+            return False
+        if not self.tree_rect.collidepoint(pos):
+            return False
+        for rect, node_id in self._tree_hitboxes:
+            if rect.collidepoint(pos):
+                self.model.select_node(node_id)
+                return True
+        self.model.select_node(None)
+        return True
+
     def _spawn_from_palette(self, target: str, idx: int, mouse_pos: tuple[int, int]) -> None:
-        collection = self.available_entities if target == "entity" else self.available_environments
-        if not (0 <= idx < len(collection)):
-            return
-
-        name, factory = collection[idx]
-
         spawn_pos = pygame.Vector2(mouse_pos)
         if not self.canvas_rect.collidepoint(mouse_pos):
             spawn_pos = pygame.Vector2(self.canvas_rect.center)
 
-        ent = factory(spawn_pos)
-        self.entities.append(ent)
-        self.entity_labels.append(self._make_entity_label(name))
-        self.selected = len(self.entities) - 1
+        node = self.model.spawn_from_palette(target, idx, spawn_pos)
+        if node is None:
+            return
 
         self.drag_mode = "spawn-new"
         self._start_drag_existing(mouse_pos)
 
     # ---------- Select / Drag ----------
 
-    def _select_entity_at(self, mouse_pos: tuple[int, int]) -> int | None:
-        mx, my = mouse_pos
-        best_i: int | None = None
-        best_d2: float | None = None
-
-        for i, e in enumerate(self.entities):
-            p = getattr(e, "pos", None)
-            if p is None:
-                continue
-            dx = mx - float(p.x)
-            dy = my - float(p.y)
-            d2 = dx * dx + dy * dy
-            if best_d2 is None or d2 < best_d2:
-                best_d2 = d2
-                best_i = i
-
-        if best_i is not None:
-            self.selected = best_i
-        return best_i
+    def _select_node_at(self, mouse_pos: tuple[int, int]) -> int | None:
+        return self.model.select_at_position(mouse_pos)
 
     def _start_drag_existing(self, mouse_pos: tuple[int, int]) -> None:
-        if not self.entities:
+        node = self.model.selected_node()
+        if node is None or node.payload is None:
             return
-        ent = self.entities[self.selected]
-        p = getattr(ent, "pos", None)
+        p = getattr(node.payload, "pos", None)
         if p is None:
             return
 
@@ -392,53 +448,16 @@ class EditorScene(Scene):
         self._drag_to(mouse_pos)
 
     def _drag_to(self, mouse_pos: tuple[int, int]) -> None:
-        if not self.entities:
-            return
-        ent = self.entities[self.selected]
-        p = getattr(ent, "pos", None)
-        if p is None:
+        if self.model.selected_node() is None:
             return
 
         desired = pygame.Vector2(mouse_pos) + self.drag_offset
-
-        radius = float(getattr(ent, "radius", 0.0))
-        left = self.canvas_rect.left + radius
-        right = self.canvas_rect.right - radius
-        top = self.canvas_rect.top + radius
-        bottom = self.canvas_rect.bottom - radius
-
-        desired.x = max(left, min(right, desired.x))
-        desired.y = max(top, min(bottom, desired.y))
-
-        p.x, p.y = desired.x, desired.y
+        self.model.move_selected_within(self.canvas_rect, desired)
 
     def _delete_selected(self) -> None:
-        if not self.entities:
-            return
-
-        idx = min(self.selected, len(self.entities) - 1)
-        self.entities.pop(idx)
-        self.entity_labels.pop(idx)
-
-        if self.entities:
-            self.selected = min(idx, len(self.entities) - 1)
-        else:
-            self.selected = 0
+        self.model.delete_selected()
         self.dragging = False
         self.drag_mode = None
 
-    def _make_entity_label(self, base: str) -> str:
-        prefix = f"{base} #"
-        count = 0
-        for label in self.entity_labels:
-            if label == base or label.startswith(prefix):
-                count += 1
-        if count == 0:
-            return base
-        return f"{base} #{count + 1}"
-
     def _selected_label(self) -> str:
-        if not self.entities or not self.entity_labels:
-            return ""
-        idx = max(0, min(self.selected, len(self.entity_labels) - 1))
-        return self.entity_labels[idx]
+        return self.model.selected_label()
