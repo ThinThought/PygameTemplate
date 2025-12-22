@@ -19,19 +19,46 @@
     {
       "id": "env-001",
       "kind": "environment",
-      "type": "game.environments.black_zone.BlackZone",
+      "type": "game.environments.force.ForceEnvironment",
       "parent": null,
       "transform": {
         "position": [
-          97.1412844036697,
-          624.0733944954129
+          157.33333333333331,
+          61.66666666666663
         ]
       },
       "state": {
-        "dims": [
-          200.0,
-          200.0
+        "magnitude": 9.81,
+        "auto_integrate": true
+      },
+      "children": [
+        "ent-001"
+      ]
+    },
+    {
+      "id": "ent-001",
+      "kind": "entity",
+      "type": "game.entities.visible_mass.VisibleMassEntity",
+      "parent": "env-001",
+      "transform": {
+        "position": [
+          307.3333333333333,
+          241.66666666666666
         ]
+      },
+      "state": {
+        "mass": 1.5,
+        "velocity": [
+          0.0,
+          0.0
+        ],
+        "color": "Color(76, 139, 245, 255)",
+        "outline_color": "Color(18, 44, 92, 255)",
+        "label_color": "Color(255, 255, 255, 255)",
+        "min_radius": 8.0,
+        "radius_scale": 12.0,
+        "show_velocity": true,
+        "show_label": true
       },
       "children": []
     }

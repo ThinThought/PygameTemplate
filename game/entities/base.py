@@ -8,15 +8,6 @@ import pygame
 class AppLike(Protocol):
     """Lo mínimo que una entidad puede necesitar del mundo."""
     pass
-class Mass:
-    """
-    Componente de física simple.
-    """
-
-    def __init__(self, mass: float = 0.0) -> None:
-        self.mass = mass
-        self.velocity = pygame.Vector2(0, 0)
-        self.acceleration = pygame.Vector2(0, 0)
 
 class Entity:
     """
@@ -26,7 +17,6 @@ class Entity:
     - No conoce input directamente
     - No gestiona el loop
     """
-    mass = Mass()
     def on_spawn(self, app: AppLike) -> None:
         """Se llama cuando la entidad entra en escena."""
         pass
