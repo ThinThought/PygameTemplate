@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pygame
 from pathlib import Path
+from time import perf_counter
 
 from game.compositions import CompositionRuntime, load_composition
 from game.scenes.base import Scene, AppLike
@@ -13,6 +14,9 @@ class MainScene(Scene):
         self.composition_path: Path | None = self._resolve_composition_path(composition_path)
         self._render_surface: pygame.Surface | None = None
         self._render_surface_size: tuple[int, int] | None = None
+        self._node_update_times: dict[str, float] = {}
+        self._node_render_times: dict[str, float] = {}
+        self._scaled_surface: pygame.Surface | None = None
 
     def on_enter(self, app: AppLike) -> None:
         self._load_composition(app)
@@ -27,10 +31,14 @@ class MainScene(Scene):
                 handler(app, ev)
 
     def update(self, app: AppLike, dt: float) -> None:
+        self._node_update_times.clear()
         for node in self._iter_runtime_nodes():
             updater = getattr(node.instance, "update", None)
-            if callable(updater):
-                updater(app, dt)
+            if not callable(updater):
+                continue
+            start = perf_counter()
+            updater(app, dt)
+            self._node_update_times[node.id] = (perf_counter() - start) * 1000.0
 
     def render(self, app: AppLike, screen: pygame.Surface) -> None:
         screen.fill("white")
@@ -42,10 +50,14 @@ class MainScene(Scene):
         render_surface = self._ensure_render_surface(target_size)
         render_surface.fill("white")
 
+        self._node_render_times.clear()
         for node in self._iter_runtime_nodes():
             renderer = getattr(node.instance, "render", None)
-            if callable(renderer):
-                renderer(app, render_surface)
+            if not callable(renderer):
+                continue
+            start = perf_counter()
+            renderer(app, render_surface)
+            self._node_render_times[node.id] = (perf_counter() - start) * 1000.0
 
         canvas_rect = self._fit_canvas(screen.get_size(), render_surface.get_size())
         if canvas_rect.width <= 0 or canvas_rect.height <= 0:
@@ -54,7 +66,8 @@ class MainScene(Scene):
         if canvas_rect.size == render_surface.get_size():
             screen.blit(render_surface, canvas_rect.topleft)
         else:
-            scaled = pygame.transform.smoothscale(render_surface, canvas_rect.size)
+            scaled = self._ensure_scaled_surface(canvas_rect.size)
+            pygame.transform.smoothscale(render_surface, canvas_rect.size, scaled)
             screen.blit(scaled, canvas_rect.topleft)
 
     # ---------- Composition helpers ----------
@@ -65,6 +78,9 @@ class MainScene(Scene):
             self._ordered_nodes = []
             self._render_surface = None
             self._render_surface_size = None
+            self._node_update_times.clear()
+            self._node_render_times.clear()
+            self._scaled_surface = None
             return
 
         try:
@@ -75,9 +91,15 @@ class MainScene(Scene):
             self._ordered_nodes = []
             self._render_surface = None
             self._render_surface_size = None
+            self._node_update_times.clear()
+            self._node_render_times.clear()
+            self._scaled_surface = None
             return
 
         self._ordered_nodes = list(self.runtime.iter_nodes())
+        self._node_update_times.clear()
+        self._node_render_times.clear()
+        self._scaled_surface = None
         for node in self._ordered_nodes:
             on_spawn = getattr(node.instance, "on_spawn", None)
             if callable(on_spawn):
@@ -94,6 +116,9 @@ class MainScene(Scene):
         self.runtime = None
         self._render_surface = None
         self._render_surface_size = None
+        self._node_update_times.clear()
+        self._node_render_times.clear()
+        self._scaled_surface = None
 
     def _iter_runtime_nodes(self):
         return self._ordered_nodes
@@ -134,3 +159,25 @@ class MainScene(Scene):
         offset_x = (vw - scaled_w) // 2
         offset_y = (vh - scaled_h) // 2
         return pygame.Rect(offset_x, offset_y, scaled_w, scaled_h)
+
+    def _ensure_scaled_surface(self, size: tuple[int, int]) -> pygame.Surface:
+        if self._scaled_surface is None or self._scaled_surface.get_size() != size:
+            self._scaled_surface = pygame.Surface(size).convert()
+        return self._scaled_surface
+
+    def node_timing_report(self, limit: int = 5) -> tuple[list[tuple[str, float]], list[tuple[str, float]]]:
+        runtime = self.runtime
+        if runtime is None:
+            return [], []
+
+        def _label(node_id: str) -> str:
+            node = runtime.nodes.get(node_id)
+            if node is None:
+                return node_id
+            return f"{node.id}:{type(node.instance).__name__}"
+
+        def _top(times: dict[str, float]) -> list[tuple[str, float]]:
+            entries = sorted(times.items(), key=lambda item: item[1], reverse=True)
+            return [(_label(node_id), elapsed) for node_id, elapsed in entries[:limit]]
+
+        return _top(self._node_update_times), _top(self._node_render_times)

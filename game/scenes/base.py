@@ -20,3 +20,7 @@ class Scene:
 
     def render(self, app: AppLike, screen: pygame.Surface) -> None:
         pass
+
+    def debug_hud_rows(self, app: AppLike) -> list[str] | None:
+        """Hook opcional para publicar filas extras en el HUD."""
+        return None

@@ -11,6 +11,7 @@ class AudioManager:
         self.music_dir = assets_dir / "music"
 
         self._sounds: dict[str, pygame.mixer.Sound] = {}
+        self.current_music: str | None = None
 
     # ---------- INIT ----------
 
@@ -55,12 +56,14 @@ class AudioManager:
         pygame.mixer.music.load(path)
         pygame.mixer.music.set_volume(volume)
         pygame.mixer.music.play(-1 if loop else 0, fade_ms=fade_ms)
+        self.current_music = name
 
     def stop_music(self, *, fade_ms: int = 0) -> None:
         if fade_ms > 0:
             pygame.mixer.music.fadeout(fade_ms)
         else:
             pygame.mixer.music.stop()
+        self.current_music = None
 
     def pause_music(self) -> None:
         pygame.mixer.music.pause()

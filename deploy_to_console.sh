@@ -13,9 +13,11 @@ set -eu
 rm -rf vendor
 mkdir -p vendor
 
-uv pip install --target vendor \
-  --no-compile \
-  rich
+uv pip freeze \
+  | grep -vE '^-e |^file:|^\.$' \
+  | sed 's/@.*//' \
+  | xargs -n1 uv pip install --target vendor --no-compile
+
 
 echo "✅ vendor/ listo"
 echo "📦 Root: $PROJECT_DIR"

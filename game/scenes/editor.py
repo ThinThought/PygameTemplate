@@ -143,7 +143,7 @@ class EditorScene(Scene):
         self.vcursor_enabled = False
         self.vcursor_pos = pygame.Vector2(80, 80)
         self.vcursor_vel = pygame.Vector2(0, 0)
-        self.vcursor_speed = 450.0  # px/s
+        self.vcursor_speed = 250.0  # px/s
         self.vcursor_deadzone = 0.18
         self.vcursor_buttons: dict[int, bool] = {1: False, 3: False}  # LMB/RMB
         self.context_menu_active = False
@@ -1064,7 +1064,16 @@ class EditorScene(Scene):
         return s if len(s) <= 70 else s[:67] + "..."
 
     def _attr_supports_edit(self, value: Any) -> bool:
-        return isinstance(value, (int, float, str, bool)) or value is None
+        if isinstance(value, (int, float, str, bool)) or value is None:
+            return True
+        return self._is_editable_sequence(value)
+
+    def _is_editable_sequence(self, value: Any) -> bool:
+        if not isinstance(value, (list, tuple)):
+            return False
+        if not value:
+            return True
+        return all(isinstance(item, str) for item in value)
 
     def _handle_attr_text_input(self, text: str) -> None:
         if not self.attr_editing or not text:
@@ -1072,44 +1081,20 @@ class EditorScene(Scene):
         self.attr_input += text
 
     def _handle_attr_keydown(self, ev: pygame.event.Event) -> bool:
-        node = self.model.selected_node()
-        if node is None:
-            return False
-        entries = self._collect_attr_entries(node, self._selected_label())
-        if not entries:
-            return False
-
-        if self.attr_editing:
-            if ev.key == pygame.K_RETURN:
-                self._commit_attr_edit()
-                return True
-            if ev.key in (pygame.K_ESCAPE, pygame.K_TAB):
-                self._cancel_attr_edit()
-                return True
-            if ev.key == pygame.K_BACKSPACE:
-                self.attr_input = self.attr_input[:-1]
-                return True
-            if ev.key == pygame.K_DELETE:
-                self.attr_input = ""
-                return True
-            # swallow any other key while editing
+        if ev.key == pygame.K_RETURN:
+            self._commit_attr_edit()
             return True
-
-        if ev.key == pygame.K_DOWN:
-            self.attr_focus_index = min(len(entries) - 1, self.attr_focus_index + 1)
-            self._scroll_attr_focus_into_view(entries)
+        if ev.key in (pygame.K_ESCAPE, pygame.K_TAB):
+            self._cancel_attr_edit()
             return True
-        if ev.key == pygame.K_UP:
-            self.attr_focus_index = max(0, self.attr_focus_index - 1)
-            self._scroll_attr_focus_into_view(entries)
+        if ev.key == pygame.K_BACKSPACE:
+            self.attr_input = self.attr_input[:-1]
             return True
-        if ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-            if 0 <= self.attr_focus_index < len(entries):
-                entry = entries[self.attr_focus_index]
-                if entry.editable:
-                    self._begin_attr_edit(node, entry)
+        if ev.key == pygame.K_DELETE:
+            self.attr_input = ""
             return True
-        return False
+        # swallow any other key while editing
+        return True
 
     def _begin_attr_edit(self, node, entry: AttrEntry) -> None:
         if not entry.editable or entry.attr_name is None or node.payload is None:
@@ -1169,6 +1154,8 @@ class EditorScene(Scene):
             return "true" if value else "false"
         if isinstance(value, (int, float)):
             return str(value)
+        if self._is_editable_sequence(value):
+            return ", ".join(value)
         return str(value)
 
     def _parse_attr_input(self, original: Any, text: str) -> tuple[bool, Any]:
@@ -1189,10 +1176,23 @@ class EditorScene(Scene):
                 return True, float(text.strip())
             except ValueError:
                 return False, original
+        if isinstance(original, (list, tuple)) and self._is_editable_sequence(original):
+            parsed = self._parse_sequence_input(text)
+            if isinstance(original, tuple):
+                return True, tuple(parsed)
+            return True, parsed
         if isinstance(original, str) or original is None:
             return True, text
         # unsupported type, treat as string
         return True, text
+
+    def _parse_sequence_input(self, text: str) -> list[str]:
+        if not text.strip():
+            return []
+        normalized = text.replace("\r\n", ",").replace("\n", ",").replace(";", ",")
+        parts = normalized.split(",")
+        values = [part.strip() for part in parts if part.strip()]
+        return values
 
     # ---------------- VCursor helpers ----------------
 
@@ -1317,7 +1317,7 @@ class EditorScene(Scene):
             return
 
         if ev.type == pygame.KEYDOWN:
-            if self._handle_attr_keydown(ev):
+            if self.attr_editing and self._handle_attr_keydown(ev):
                 return
             if ev.key in (pygame.K_DELETE, pygame.K_BACKSPACE):
                 self._delete_selected()
@@ -1480,6 +1480,46 @@ class EditorScene(Scene):
             if rect.collidepoint(pos):
                 return node_id
         return None
+
+    # ---------- Attr panel ----------
+
+    def _attr_panel_hit(self, pos: tuple[int, int]) -> bool:
+        if self.attrs_rect.width <= 0 or self.attrs_rect.height <= 0:
+            return False
+        if not self.attrs_rect.collidepoint(pos):
+            return False
+
+        node = self.model.selected_node()
+        if node is None:
+            return False
+
+        entries = self._collect_attr_entries(node, self._selected_label())
+        if not entries:
+            return False
+
+        idx = self._attr_entry_index_at(pos, entries)
+        if idx is None:
+            return False
+
+        self.attr_focus_index = idx
+        entry = entries[idx]
+        if entry.editable:
+            self._begin_attr_edit(node, entry)
+        return True
+
+    def _attr_entry_index_at(self, pos: tuple[int, int], entries: list[AttrEntry]) -> int | None:
+        rect = self.attrs_rect
+        body_top, body_bottom = self._section_body_bounds(rect)
+        if pos[1] < body_top or pos[1] >= body_bottom:
+            return None
+        visible = body_bottom - body_top
+        if visible <= 0:
+            return None
+        relative_y = (pos[1] - body_top) + self.attrs_scroll
+        if relative_y < 0:
+            return None
+        idx = int(relative_y // self.attr_line_h)
+        return idx if 0 <= idx < len(entries) else None
 
     def _spawn_from_palette(self, target: str, idx: int, mouse_pos: tuple[int, int]) -> None:
         spawn_pos_vec = self._canvas_point_to_scene(mouse_pos, clamp=False)
@@ -1652,6 +1692,9 @@ class EditorScene(Scene):
             return
 
         if self._tree_hit(pos):
+            return
+
+        if self._attr_panel_hit(pos):
             return
 
         if self.canvas_rect.collidepoint(pos):

@@ -28,6 +28,7 @@ class SpritePlatform(SpriteColliderMixin, Platform):
         **platform_kwargs,
     ) -> None:
         super().__init__(pos, show_collider=show_collider, **platform_kwargs)
+        self.visible = True
 
 
 class GrassSmallPlatform(SpritePlatform):

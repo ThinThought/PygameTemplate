@@ -190,6 +190,22 @@ Tras modificar este archivo, debes regenerar el vendor bundle antes de copiar el
 
 ---
 
+## Podar sprites PNG
+
+Cuando importas sprites con bordes transparentes grandes (por ejemplo, las plataformas en `assets/images/platforms`), puedes recortarlos automáticamente con Pillow:
+
+```bash
+# Instala deps si no lo has hecho
+uv sync
+
+# Recorta todas las plataformas (usa --dry-run para probar sin escribir)
+uv run python scripts/prune_pngs.py
+```
+
+El script acepta rutas extra (`uv run python scripts/prune_pngs.py assets/images/pc`) y parámetros para ajustar el umbral del canal alfa (`--threshold`) o el colchón transparente que se vuelve a añadir tras el recorte (`--margin`).
+
+---
+
 ## Despliegue en consola
 
 Crear bundle y sincronizarlo con la consola:
