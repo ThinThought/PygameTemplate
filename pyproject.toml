@@ -3,9 +3,9 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pygame-editor"
+name = "pygame-videogame-maker"
 authors = [{ name = "Diego Delgado Chaves", email = "diedelcha@gmail.com" }]
-version = "0.1.0"
+version = "1.0.0"
 description = "Minimal Pygame scaffold (window + loop)"
 readme = "README.md"
 requires-python = ">=3.11"

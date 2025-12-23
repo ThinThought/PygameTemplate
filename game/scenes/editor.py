@@ -125,8 +125,10 @@ class EditorScene(Scene):
         self.tree_scroll = 0
         self.attrs_scroll = 0
         self.attr_focus_index = 0
+        self._attr_focus_changed = False
         self.attr_editing = False
         self.attr_input = ""
+        self.attr_cursor_pos = 0
         self._attr_edit_attr: str | None = None
         self._attr_edit_node_id: int | None = None
         self._attr_edit_component: str | None = None
@@ -834,7 +836,11 @@ class EditorScene(Scene):
         return allowed
 
     def _context_menu_spawn_relative(
-        self, kind: str, idx: int, *, before: bool
+        self,
+        kind: str,
+        idx: int,
+        *,
+        before: bool,
     ) -> bool:
         target_id = self.context_menu_target_id
         if target_id is None:
@@ -948,6 +954,7 @@ class EditorScene(Scene):
         if self._last_attr_node_id != node.id:
             self._last_attr_node_id = node.id
             self.attr_focus_index = 0
+            self._attr_focus_changed = True
             self._cancel_attr_edit()
 
         entries = self._collect_attr_entries(node, self._selected_label())
@@ -983,7 +990,10 @@ class EditorScene(Scene):
         return (mx, my)
 
     def _canvas_point_to_scene(
-        self, pos: tuple[int, int], *, clamp: bool = True
+        self,
+        pos: tuple[int, int],
+        *,
+        clamp: bool = True,
     ) -> pygame.Vector2 | None:
         rect = self.canvas_rect
         if rect.width <= 0 or rect.height <= 0 or self.canvas_scale <= 0:
@@ -1003,7 +1013,10 @@ class EditorScene(Scene):
         return pygame.Vector2(scene_x, scene_y)
 
     def _draw_section_header(
-        self, screen: pygame.Surface, rect: pygame.Rect, title: str
+        self,
+        screen: pygame.Surface,
+        rect: pygame.Rect,
+        title: str,
     ) -> None:
         t = self.font.render(title, True, (220, 220, 220))
         screen.blit(t, (rect.x + 10, rect.y + 8))
@@ -1016,7 +1029,10 @@ class EditorScene(Scene):
         )
 
     def _draw_attrs(
-        self, screen: pygame.Surface, rect: pygame.Rect, entries: list[AttrEntry]
+        self,
+        screen: pygame.Surface,
+        rect: pygame.Rect,
+        entries: list[AttrEntry],
     ) -> None:
         if not entries:
             return
@@ -1050,7 +1066,9 @@ class EditorScene(Scene):
                 if self.attr_editing and is_focus:
                     value_text = self.attr_input
                     if cursor_on:
-                        value_text += "|"
+                        pre = self.attr_input[: self.attr_cursor_pos]
+                        post = self.attr_input[self.attr_cursor_pos :]
+                        value_text = f"{pre}|{post}"
 
                 ksurf = self.font_mono.render(entry.label, True, key_color)
                 vsurf = self.font_mono.render(value_text, True, value_color)
@@ -1064,10 +1082,18 @@ class EditorScene(Scene):
             self._cancel_attr_edit()
             return
         max_idx = len(entries) - 1
+
+        old_idx = self.attr_focus_index
         self.attr_focus_index = max(0, min(self.attr_focus_index, max_idx))
+        if old_idx != self.attr_focus_index:
+            self._attr_focus_changed = True
+
         if self.attr_editing and self._attr_edit_node_id != node_id:
             self._cancel_attr_edit()
-        self._scroll_attr_focus_into_view(entries)
+
+        if self._attr_focus_changed:
+            self._scroll_attr_focus_into_view(entries)
+            self._attr_focus_changed = False
 
     def _scroll_attr_focus_into_view(self, entries: list[AttrEntry]) -> None:
         if not entries:
@@ -1111,26 +1137,88 @@ class EditorScene(Scene):
         items: list[AttrEntry] = []
         if obj is None:
             return items
-        d = getattr(obj, "__dict__", {})
-        for k in sorted(d.keys()):
-            if k.startswith("_"):
+
+        seen_attrs = set()
+
+        # Iterate through the MRO to find attributes, respecting definition order
+        for cls in reversed(obj.__class__.__mro__):
+            if cls is object:
                 continue
-            value = d[k]
-            if isinstance(value, pygame.Vector2):
-                items.extend(self._vector_attr_entries(k, value))
+
+            # Separated attributes for this class level
+            class_level_attrs: list[AttrEntry] = []
+
+            # Process attributes defined in this class
+            for k in sorted(cls.__dict__.keys()):
+                if k.startswith("_") or k in seen_attrs:
+                    continue
+
+                v = cls.__dict__[k]
+
+                # We are interested in properties and data attributes on instances
+                is_property = isinstance(v, property)
+                is_data_like = not callable(v) or is_property
+
+                if not is_data_like:
+                    continue
+
+                try:
+                    value = getattr(obj, k)
+                except AttributeError:
+                    continue
+
+                # An attribute is editable if it's a property with a setter,
+                # or if it's a direct instance attribute (in __dict__)
+                editable = False
+                if is_property:
+                    editable = v.fset is not None and self._attr_supports_edit(value)
+                elif k in obj.__dict__:
+                    editable = self._attr_supports_edit(value)
+
+                # Expand Vector2 into its components for direct editing
+                if isinstance(value, pygame.Vector2):
+                    class_level_attrs.extend(self._vector_attr_entries(k, value))
+                else:
+                    class_level_attrs.append(
+                        AttrEntry(
+                            k,
+                            self._safe_repr(value),
+                            editable=editable,
+                            attr_name=k,
+                            raw_value=value,
+                        )
+                    )
+                seen_attrs.add(k)
+
+            if class_level_attrs:
+                items.append(AttrEntry(f"[{cls.__name__}]", "", editable=False))
+                items.extend(sorted(class_level_attrs, key=lambda x: x.label))
+
+        # Add any remaining instance attributes not defined in any class (dynamic)
+        remaining_instance_attrs: list[AttrEntry] = []
+        for k, value in sorted(obj.__dict__.items()):
+            if k.startswith("_") or k in seen_attrs:
                 continue
+
             editable = self._attr_supports_edit(value)
-            attr_name = k if editable else None
-            raw_value = value if editable else None
-            items.append(
-                AttrEntry(
-                    k,
-                    self._safe_repr(value),
-                    editable=editable,
-                    attr_name=attr_name,
-                    raw_value=raw_value,
+            if isinstance(value, pygame.Vector2):
+                remaining_instance_attrs.extend(self._vector_attr_entries(k, value))
+            else:
+                remaining_instance_attrs.append(
+                    AttrEntry(
+                        k,
+                        self._safe_repr(value),
+                        editable=editable,
+                        attr_name=k,
+                        raw_value=value,
+                    )
                 )
-            )
+            seen_attrs.add(k)
+
+        if remaining_instance_attrs:
+            items.append(AttrEntry("[Instance]", "", editable=False))
+            items.extend(sorted(remaining_instance_attrs, key=lambda x: x.label))
+
         return items
 
     def _vector_attr_entries(self, name: str, vec: pygame.Vector2) -> list[AttrEntry]:
@@ -1172,7 +1260,10 @@ class EditorScene(Scene):
     def _handle_attr_text_input(self, text: str) -> None:
         if not self.attr_editing or not text:
             return
-        self.attr_input += text
+        pre = self.attr_input[: self.attr_cursor_pos]
+        post = self.attr_input[self.attr_cursor_pos :]
+        self.attr_input = f"{pre}{text}{post}"
+        self.attr_cursor_pos += len(text)
 
     def _handle_attr_keydown(self, ev: pygame.event.Event) -> bool:
         if ev.key == pygame.K_RETURN:
@@ -1181,11 +1272,30 @@ class EditorScene(Scene):
         if ev.key in (pygame.K_ESCAPE, pygame.K_TAB):
             self._cancel_attr_edit()
             return True
+        if ev.key == pygame.K_LEFT:
+            self.attr_cursor_pos = max(0, self.attr_cursor_pos - 1)
+            return True
+        if ev.key == pygame.K_RIGHT:
+            self.attr_cursor_pos = min(len(self.attr_input), self.attr_cursor_pos + 1)
+            return True
+        if ev.key == pygame.K_HOME:
+            self.attr_cursor_pos = 0
+            return True
+        if ev.key == pygame.K_END:
+            self.attr_cursor_pos = len(self.attr_input)
+            return True
         if ev.key == pygame.K_BACKSPACE:
-            self.attr_input = self.attr_input[:-1]
+            if self.attr_cursor_pos > 0:
+                pre = self.attr_input[: self.attr_cursor_pos - 1]
+                post = self.attr_input[self.attr_cursor_pos :]
+                self.attr_input = f"{pre}{post}"
+                self.attr_cursor_pos -= 1
             return True
         if ev.key == pygame.K_DELETE:
-            self.attr_input = ""
+            if self.attr_cursor_pos < len(self.attr_input):
+                pre = self.attr_input[: self.attr_cursor_pos]
+                post = self.attr_input[self.attr_cursor_pos + 1 :]
+                self.attr_input = f"{pre}{post}"
             return True
         # swallow any other key while editing
         return True
@@ -1195,6 +1305,7 @@ class EditorScene(Scene):
             return
         self.attr_editing = True
         self.attr_input = self._format_attr_value(entry.raw_value)
+        self.attr_cursor_pos = len(self.attr_input)
         self._attr_edit_attr = entry.attr_name
         self._attr_edit_node_id = node.id
         self._attr_edit_raw_value = entry.raw_value
@@ -1206,6 +1317,7 @@ class EditorScene(Scene):
             pygame.key.stop_text_input()
         self.attr_editing = False
         self.attr_input = ""
+        self.attr_cursor_pos = 0
         self._attr_edit_attr = None
         self._attr_edit_node_id = None
         self._attr_edit_raw_value = None
@@ -1329,7 +1441,9 @@ class EditorScene(Scene):
         )
 
     def _controller_button_indices(
-        self, names: tuple[str, ...], fallback: tuple[int, ...]
+        self,
+        names: tuple[str, ...],
+        fallback: tuple[int, ...],
     ) -> tuple[int, ...]:
         seen: set[int] = set()
         result: list[int] = []
@@ -1491,8 +1605,10 @@ class EditorScene(Scene):
             return
 
         if ev.type == pygame.JOYAXISMOTION and self.vcursor_enabled:
+            joy = pygame.joystick.Joystick(ev.joy)
+
+            # --- vcursor move (left stick) ---
             if ev.axis in self._vcursor_axes:
-                joy = pygame.joystick.Joystick(ev.joy)
                 ax_idx, ay_idx = self._vcursor_axes
                 ax = joy.get_axis(ax_idx)
                 ay = joy.get_axis(ay_idx)
@@ -1506,8 +1622,15 @@ class EditorScene(Scene):
                 self.vcursor_vel.x = ax * self.vcursor_speed
                 self.vcursor_vel.y = ay * self.vcursor_speed
 
-                # opcional: generar un “motion” lógico cuando cambie
-                self._pointer_move((int(self.vcursor_pos.x), int(self.vcursor_pos.y)))
+                self._pointer_move(
+                    (int(self.vcursor_pos.x), int(self.vcursor_pos.y))
+                )
+
+            # --- scroll (right stick Y) ---
+            if ev.axis == self._vscroll_axis:
+                v = joy.get_axis(self._vscroll_axis)
+                self._vscroll_value = 0.0 if abs(v) < self._vscroll_deadzone else v
+
             return
 
         if ev.type == pygame.JOYHATMOTION and self.vcursor_enabled:
@@ -1548,37 +1671,11 @@ class EditorScene(Scene):
                         3, (int(self.vcursor_pos.x), int(self.vcursor_pos.y))
                     )
                 return
-            if ev.type == pygame.JOYAXISMOTION and self.vcursor_enabled:
-                joy = pygame.joystick.Joystick(ev.joy)
-
-                # --- vcursor move (left stick) ---
-                if ev.axis in self._vcursor_axes:
-                    ax_idx, ay_idx = self._vcursor_axes
-                    ax = joy.get_axis(ax_idx)
-                    ay = joy.get_axis(ay_idx)
-
-                    def dz(v: float, dead: float) -> float:
-                        return 0.0 if abs(v) < dead else v
-
-                    ax = dz(ax, self.vcursor_deadzone)
-                    ay = dz(ay, self.vcursor_deadzone)
-
-                    self.vcursor_vel.x = ax * self.vcursor_speed
-                    self.vcursor_vel.y = ay * self.vcursor_speed
-
-                    self._pointer_move(
-                        (int(self.vcursor_pos.x), int(self.vcursor_pos.y))
-                    )
-                    return
-
-                # --- scroll (right stick Y) ---
-                if ev.axis == self._vscroll_axis:
-                    v = joy.get_axis(self._vscroll_axis)
-                    self._vscroll_value = 0.0 if abs(v) < self._vscroll_deadzone else v
-                    return
 
     def _event_pos_local(
-        self, app: AppLike, ev: pygame.event.Event
+        self,
+        app: AppLike,
+        ev: pygame.event.Event,
     ) -> tuple[int, int] | None:
         """Convierte ev.pos (coords ventana) a coords del viewport."""
         if not hasattr(ev, "pos"):
@@ -1677,13 +1774,19 @@ class EditorScene(Scene):
             return False
 
         self.attr_focus_index = idx
+        self._attr_focus_changed = True
         entry = entries[idx]
         if entry.editable:
-            self._begin_attr_edit(node, entry)
+            if isinstance(entry.raw_value, bool):
+                self._toggle_boolean_attr(node, entry)
+            else:
+                self._begin_attr_edit(node, entry)
         return True
 
     def _attr_entry_index_at(
-        self, pos: tuple[int, int], entries: list[AttrEntry]
+        self,
+        pos: tuple[int, int],
+        entries: list[AttrEntry],
     ) -> int | None:
         rect = self.attrs_rect
         body_top, body_bottom = self._section_body_bounds(rect)
@@ -1698,8 +1801,21 @@ class EditorScene(Scene):
         idx = int(relative_y // self.attr_line_h)
         return idx if 0 <= idx < len(entries) else None
 
+    def _toggle_boolean_attr(self, node, entry: AttrEntry) -> None:
+        if not entry.editable or not isinstance(entry.raw_value, bool):
+            return
+        if node.payload is None or entry.attr_name is None:
+            return
+
+        current_value = getattr(node.payload, entry.attr_name, None)
+        if isinstance(current_value, bool):
+            setattr(node.payload, entry.attr_name, not current_value)
+
     def _spawn_from_palette(
-        self, target: str, idx: int, mouse_pos: tuple[int, int]
+        self,
+        target: str,
+        idx: int,
+        mouse_pos: tuple[int, int],
     ) -> None:
         spawn_pos_vec = self._canvas_point_to_scene(mouse_pos, clamp=False)
         if spawn_pos_vec is None:

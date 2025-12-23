@@ -27,7 +27,7 @@ class InputTesterScene(Scene):
         self.font: pygame.font.Font | None = None
         self.small: pygame.font.Font | None = None
 
-        self.events: deque[str] = deque(maxlen=12)
+        self.events: deque[str] = deque(maxlen=200)
         self.keys_down: set[int] = set()
 
         self.joysticks: list[pygame.joystick.Joystick] = []
@@ -46,6 +46,15 @@ class InputTesterScene(Scene):
         self.controller_profile: ControllerProfile | None = None
         self._action_dictionary: dict[str, list] = {"entities": [], "editor": []}
         self._action_dictionary_error: str | None = None
+
+        self._action_scroll_y = 0
+        self._log_scroll_y = 0
+        self._action_surface: pygame.Surface | None = None
+        self._log_surface: pygame.Surface | None = None
+        self._action_rect: pygame.Rect | None = None
+        self._log_rect: pygame.Rect | None = None
+        self._action_content_height = 0
+        self._log_content_height = 0
 
     def on_enter(self, app) -> None:
         self._load_controller_profile()
@@ -66,6 +75,8 @@ class InputTesterScene(Scene):
         # fuentes se crean en render porque dependen de tamaño de pantalla (relativo)
         self.font = None
         self.small = None
+        self._render_action_surface()
+        self._render_log_surface()
 
     def _discover_joysticks(self) -> None:
         self.joysticks = []
@@ -88,6 +99,7 @@ class InputTesterScene(Scene):
 
     def _push(self, msg: str) -> None:
         self.events.appendleft(msg)
+        self._render_log_surface()
 
     def _mark_snapshot_dirty(self) -> None:
         self._snapshot_dirty = True
@@ -151,6 +163,29 @@ class InputTesterScene(Scene):
         if ev.type == pygame.QUIT:
             app.running = False
             return
+
+        if ev.type == pygame.MOUSEWHEEL:
+            mouse_pos = pygame.mouse.get_pos()
+            scroll_speed = 30  # pixels per wheel turn
+
+            if self._action_rect and self._action_rect.collidepoint(mouse_pos):
+                self._action_scroll_y += ev.y * scroll_speed
+                self._action_scroll_y = max(
+                    0,
+                    min(
+                        self._action_scroll_y,
+                        self._action_content_height - self._action_rect.height,
+                    ),
+                )
+            elif self._log_rect and self._log_rect.collidepoint(mouse_pos):
+                self._log_scroll_y += ev.y * scroll_speed
+                self._log_scroll_y = max(
+                    0,
+                    min(
+                        self._log_scroll_y,
+                        self._log_content_height - self._log_rect.height,
+                    ),
+                )
 
         if ev.type == pygame.KEYDOWN:
             self.keys_down.add(ev.key)
@@ -341,18 +376,21 @@ class InputTesterScene(Scene):
                     )
 
         dict_gap = py(0.02)
-        dict_height = int(h * 0.45)
-        dict_rect = pygame.Rect(right_x, pad_y, right_w, dict_height)
-        log_rect = pygame.Rect(
-            right_x,
-            dict_rect.bottom + dict_gap,
-            right_w,
-            max(0, h - dict_rect.bottom - dict_gap - pad_y),
-        )
-        self._render_action_dictionary(screen, dict_rect)
-        self._render_event_log(screen, log_rect)
+        dict_h = int(h * 0.45)
+        self._action_rect = pygame.Rect(right_x, pad_y, right_w, dict_h)
 
-    def _render_action_dictionary(
+        log_h = max(0, h - self._action_rect.bottom - dict_gap - pad_y)
+        self._log_rect = pygame.Rect(
+            right_x,
+            self._action_rect.bottom + dict_gap,
+            right_w,
+            log_h,
+        )
+
+        self._draw_action_dictionary(screen, self._action_rect)
+        self._draw_event_log(screen, self._log_rect)
+
+    def _draw_action_dictionary(
         self, screen: pygame.Surface, rect: pygame.Rect
     ) -> None:
         if rect.width <= 0 or rect.height <= 0:
@@ -361,11 +399,55 @@ class InputTesterScene(Scene):
         pygame.draw.rect(screen, (18, 18, 24), rect, border_radius=12)
         pygame.draw.rect(screen, (40, 40, 60), rect, width=1, border_radius=12)
 
-        title = self.small.render("Action Dictionary", True, (180, 180, 255))
-        screen.blit(title, (rect.x + 14, rect.y + 12))
+        if self._action_surface:
+            screen.blit(
+                self._action_surface,
+                (rect.x, rect.y),
+                (0, self._action_scroll_y, rect.width, rect.height),
+            )
 
-        y = rect.y + 12 + title.get_height() + 6
-        section_gap = 6
+    def _render_action_surface(self) -> None:
+        if not self.small or not self._action_rect:
+            return
+
+        width = self._action_rect.width
+        y = 12 + self.small.get_height() + 10
+
+        # Calculate content height
+        content_h = y
+        for __, actions in [
+            ("Entities in scene", self._action_dictionary.get("entities", [])),
+            ("Editor tooling", self._action_dictionary.get("editor", [])),
+        ]:
+            if not actions:
+                continue
+            content_h += len(actions) * (self.small.get_height() + 8)
+        if self._action_dictionary_error:
+            content_h += self.small.get_height() + 6
+        self._action_content_height = content_h
+
+        # Create surface
+        self._action_surface = pygame.Surface((width, content_h), pygame.SRCALPHA)
+        self._action_surface.fill((0, 0, 0, 0))
+
+        # Render content
+        title = self.small.render("Action Dictionary", True, (180, 180, 255))
+        self._action_surface.blit(title, (14, 12))
+
+        # Header for the table
+        header_font = self.small
+        h_target = header_font.render("Target", True, (140, 190, 255))
+        h_action = header_font.render("Action", True, (140, 190, 255))
+        h_bindings = header_font.render("Bindings", True, (140, 190, 255))
+
+        col_target_x = 20
+        col_action_x = 150
+        col_bindings_x = 300
+
+        self._action_surface.blit(h_target, (col_target_x, y))
+        self._action_surface.blit(h_action, (col_action_x, y))
+        self._action_surface.blit(h_bindings, (col_bindings_x, y))
+        y += h_target.get_height() + 6
 
         contexts = [
             ("Entities in scene", self._action_dictionary.get("entities", [])),
@@ -373,62 +455,69 @@ class InputTesterScene(Scene):
         ]
 
         for ctx_label, actions in contexts:
-            if y > rect.bottom - 30:
-                break
-            header = self.small.render(ctx_label, True, (140, 190, 255))
-            screen.blit(header, (rect.x + 14, y))
-            y += header.get_height() + 4
-
             if not actions:
-                empty = self.small.render(
-                    "No bindings detected.", True, (130, 130, 130)
-                )
-                screen.blit(empty, (rect.x + 20, y))
-                y += empty.get_height() + section_gap
                 continue
 
             for action in actions:
-                if y > rect.bottom - 36:
-                    ellipsis = self.small.render("...", True, (200, 200, 200))
-                    screen.blit(ellipsis, (rect.x + 14, y))
-                    return
-                title_line = self.small.render(
-                    f"{action.target} · {action.action}", True, (220, 220, 220)
+                target_surf = self.small.render(
+                    str(action.target), True, (220, 220, 220)
                 )
-                screen.blit(title_line, (rect.x + 20, y))
-                y += title_line.get_height() + 2
+                action_surf = self.small.render(
+                    str(action.action), True, (220, 220, 220)
+                )
 
                 bindings_text = ", ".join(
                     self._format_binding(b) for b in action.bindings
                 )
-                bindings_line = self.small.render(bindings_text, True, (180, 180, 180))
-                screen.blit(bindings_line, (rect.x + 32, y))
-                y += bindings_line.get_height() + section_gap
+                bindings_surf = self.small.render(bindings_text, True, (180, 180, 180))
+
+                self._action_surface.blit(target_surf, (col_target_x, y))
+                self._action_surface.blit(action_surf, (col_action_x, y))
+                self._action_surface.blit(bindings_surf, (col_bindings_x, y))
+
+                y += target_surf.get_height() + 8
 
         if self._action_dictionary_error:
             err = self.small.render(
                 self._action_dictionary_error, True, (220, 130, 130)
             )
-            screen.blit(err, (rect.x + 14, rect.bottom - err.get_height() - 6))
+            self._action_surface.blit(err, (14, content_h - err.get_height() - 6))
 
-    def _render_event_log(self, screen: pygame.Surface, rect: pygame.Rect) -> None:
+    def _draw_event_log(self, screen: pygame.Surface, rect: pygame.Rect) -> None:
         if rect.width <= 0 or rect.height <= 0:
             return
 
         pygame.draw.rect(screen, (18, 18, 24), rect, border_radius=12)
         pygame.draw.rect(screen, (40, 40, 60), rect, width=1, border_radius=12)
 
-        title = self.small.render("Last events", True, (180, 180, 255))
-        screen.blit(title, (rect.x + 14, rect.y + 12))
+        if self._log_surface:
+            screen.blit(
+                self._log_surface,
+                (rect.x, rect.y),
+                (0, self._log_scroll_y, rect.width, rect.height),
+            )
 
-        ty = rect.y + 12 + title.get_height() + 6
+    def _render_log_surface(self) -> None:
+        if not self.small or not self._log_rect:
+            return
+
+        width = self._log_rect.width
         line_gap = 4
+        content_h = 12 + self.small.get_height() + 6
+        content_h += len(self.events) * (self.small.get_height() + line_gap)
+        self._log_content_height = content_h
+
+        self._log_surface = pygame.Surface((width, content_h), pygame.SRCALPHA)
+        self._log_surface.fill((0, 0, 0, 0))
+
+        title = self.small.render("Last events", True, (180, 180, 255))
+        self._log_surface.blit(title, (14, 12))
+
+        ty = 12 + title.get_height() + 6
         for msg in self.events:
             surf = self.small.render(msg, True, (200, 200, 200))
-            screen.blit(surf, (rect.x + 18, ty))
+            self._log_surface.blit(surf, (18, ty))
             ty += surf.get_height() + line_gap
-            if ty > rect.bottom - 10:
-                break
 
     def _load_controller_profile(self) -> None:
         if not self._controller_cfg_path.exists():
@@ -454,11 +543,13 @@ class InputTesterScene(Scene):
         except Exception as exc:
             self._action_dictionary_error = f"Editor bindings invalid: {exc}"
             self._action_dictionary = contexts
+            self._render_action_surface()
             return
 
         if self._composition_path is None:
             self._action_dictionary_error = "No composition detected for entity lookup."
             self._action_dictionary = contexts
+            self._render_action_surface()
             return
 
         try:
@@ -466,6 +557,7 @@ class InputTesterScene(Scene):
         except Exception as exc:
             self._action_dictionary_error = f"Composition load failed: {exc}"
             self._action_dictionary = contexts
+            self._render_action_surface()
             return
 
         for node in runtime.iter_nodes("entity"):
@@ -484,6 +576,7 @@ class InputTesterScene(Scene):
 
         self._action_dictionary = contexts
         self._action_dictionary_error = None
+        self._render_action_surface()
 
     def _controller_button_label(self, control: str | int) -> str:
         if self.controller_profile:

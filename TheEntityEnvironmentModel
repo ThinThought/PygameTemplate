@@ -1,4 +1,3 @@
-"""
 The Entity-Environment Interaction Model
 
 Es un modelo que ahora mismo utiliza dos entidades basicas para
@@ -24,5 +23,3 @@ Entity:
 La entidad puede ser dotada de cualquier tipo variable o componente que la habilite para
 interactuar con un entorno del cual es hija.
 - La entidad puede tener estar dotada de environments, que permiten la creacion de otras entidades.
-
-"""

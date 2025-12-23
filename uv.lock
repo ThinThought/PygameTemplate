@@ -147,7 +147,7 @@ wheels = [
 ]
 
 [[package]]
-name = "pygame-editor"
+name = "pygame-videogame-maker"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
