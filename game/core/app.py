@@ -17,8 +17,6 @@ import game.scenes as scenes_mod
 from game.scenes.base import Scene
 
 
-
-
 class HudLine(NamedTuple):
     text: str
     color: tuple[int, int, int]
@@ -71,16 +69,22 @@ class App:
         self.scene: Scene | None = None
 
         console.print(Panel.fit("✅ Pygame initialized", border_style="green"))
-        console.print(Panel.fit("F1/F2 o TAB/SHIFT+TAB: cambiar escena", border_style="cyan"))
+        console.print(
+            Panel.fit("F1/F2 o TAB/SHIFT+TAB: cambiar escena", border_style="cyan")
+        )
 
         # HUD
         self.hud_font = pygame.font.Font(None, 33)
         self.hud_visible = True
-        self.hud_height = 36  # alto por fila del HUD
-        self.hud_alpha = 235  # 0..255 (transparencia del fondo del HUD)
+        self.hud_height = 20  # alto por fila del HUD
+        self.hud_alpha = 75  # 0..255 (transparencia del fondo del HUD)
         self._hud_last_input = "-"
         self._hud_recent_inputs: deque[str] = deque(maxlen=5)
-        self._avg_timings: dict[str, float] = {"events": 0.0, "update": 0.0, "render": 0.0}
+        self._avg_timings: dict[str, float] = {
+            "events": 0.0,
+            "update": 0.0,
+            "render": 0.0,
+        }
         self._avg_fps = 0.0
         self._avg_dt_ms = 0.0
         self._hud_stats_alpha = 0.12
@@ -100,7 +104,11 @@ class App:
         self._profiling_mode = False
         self._profiling_frame_window = 60
         self._profiling_frames = 0
-        self._profiling_accumulator: dict[str, float] = {"events": 0.0, "update": 0.0, "render": 0.0}
+        self._profiling_accumulator: dict[str, float] = {
+            "events": 0.0,
+            "update": 0.0,
+            "render": 0.0,
+        }
 
     # --- Scene switching -------------------------------------------------
     def _wrap_index(self, index: int) -> int:
@@ -216,7 +224,9 @@ class App:
                 if ev.type == pygame.KEYDOWN:
                     if ev.key == pygame.K_p:
                         self._profiling_mode = not self._profiling_mode
-                        self._toast_text = f"Profiling {'ON' if self._profiling_mode else 'OFF'}"
+                        self._toast_text = (
+                            f"Profiling {'ON' if self._profiling_mode else 'OFF'}"
+                        )
                         self._toast_t = 1.0
                         self._profiling_frames = 0
                         self._reset_profiling_accumulators()
@@ -228,14 +238,17 @@ class App:
                         continue
 
                     # Scene switching: F1/F2 o TAB/SHIFT+TAB
-                    if ev.key in (pygame.K_F2, pygame.K_TAB) and not (ev.mod & pygame.KMOD_SHIFT):
+                    if ev.key in (pygame.K_F2, pygame.K_TAB) and not (
+                        ev.mod & pygame.KMOD_SHIFT
+                    ):
                         self.next_scene()
                         continue
 
-                    if ev.key == pygame.K_F1 or (ev.key == pygame.K_TAB and (ev.mod & pygame.KMOD_SHIFT)):
+                    if ev.key == pygame.K_F1 or (
+                        ev.key == pygame.K_TAB and (ev.mod & pygame.KMOD_SHIFT)
+                    ):
                         self.prev_scene()
                         continue
-
 
                 if ev.type == pygame.JOYBUTTONDOWN:
                     self.joy_buttons_down.add(ev.button)
@@ -322,11 +335,19 @@ class App:
                 update_top, render_top = reporter()
 
         if update_top:
-            lines.append("Update top: " + ", ".join(f"{name} {time:0.2f}ms" for name, time in update_top))
+            lines.append(
+                "Update top: "
+                + ", ".join(f"{name} {time:0.2f}ms" for name, time in update_top)
+            )
         if render_top:
-            lines.append("Render top: " + ", ".join(f"{name} {time:0.2f}ms" for name, time in render_top))
+            lines.append(
+                "Render top: "
+                + ", ".join(f"{name} {time:0.2f}ms" for name, time in render_top)
+            )
 
-        console.print(Panel.fit("\n".join(lines), title="Profiling (avg)", border_style="yellow"))
+        console.print(
+            Panel.fit("\n".join(lines), title="Profiling (avg)", border_style="yellow")
+        )
 
     def _render_hud(self, dt: float) -> None:
         extra_lines = self._build_hud_lines()
@@ -376,7 +397,9 @@ class App:
 
         pygame.draw.line(self.screen, (70, 70, 70), (0, bar_y), (w, bar_y), 1)
 
-    def _hud_text_surface(self, key: str, text: str, color: tuple[int, int, int]) -> pygame.Surface:
+    def _hud_text_surface(
+        self, key: str, text: str, color: tuple[int, int, int]
+    ) -> pygame.Surface:
         cached = self._hud_text_cache.get(key)
         if cached and cached[0] == text:
             return cached[1]
@@ -384,9 +407,15 @@ class App:
         self._hud_text_cache[key] = (text, surface)
         return surface
 
-    def _ensure_hud_bar_surface(self, width: int, height: int, alpha: int) -> pygame.Surface:
+    def _ensure_hud_bar_surface(
+        self, width: int, height: int, alpha: int
+    ) -> pygame.Surface:
         size = (width, height)
-        if self._hud_bar_surface is None or self._hud_bar_size != size or self._hud_bar_alpha != alpha:
+        if (
+            self._hud_bar_surface is None
+            or self._hud_bar_size != size
+            or self._hud_bar_alpha != alpha
+        ):
             bar = pygame.Surface(size, pygame.SRCALPHA)
             bar.fill((20, 20, 20, alpha))
             self._hud_bar_surface = bar
@@ -432,7 +461,10 @@ class App:
                 f"render {self._timings['render']:0.1f}ms"
             )
             lines.append(HudLine(timings_text, (160, 200, 255), "center"))
-            lines.extend(HudLine(text, (180, 210, 255), "left") for text in self._node_timing_lines())
+            lines.extend(
+                HudLine(text, (180, 210, 255), "left")
+                for text in self._node_timing_lines()
+            )
 
         for row in self._scene_debug_rows():
             lines.append(HudLine(row, (220, 210, 150), "left"))
@@ -460,10 +492,14 @@ class App:
         update_top, render_top = reporter()
         lines: list[str] = []
         if update_top:
-            update_txt = ", ".join(f"{name} {elapsed:0.2f}ms" for name, elapsed in update_top)
+            update_txt = ", ".join(
+                f"{name} {elapsed:0.2f}ms" for name, elapsed in update_top
+            )
             lines.append(f"Update top: {update_txt}")
         if render_top:
-            render_txt = ", ".join(f"{name} {elapsed:0.2f}ms" for name, elapsed in render_top)
+            render_txt = ", ".join(
+                f"{name} {elapsed:0.2f}ms" for name, elapsed in render_top
+            )
             lines.append(f"Render top: {render_txt}")
         return lines
 

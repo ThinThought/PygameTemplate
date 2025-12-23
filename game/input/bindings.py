@@ -16,7 +16,9 @@ class InputBinding:
         if isinstance(raw, cls):
             return raw
         if not isinstance(raw, dict):
-            raise TypeError(f"InputBinding expects dict or InputBinding, got {type(raw)!r}")
+            raise TypeError(
+                f"InputBinding expects dict or InputBinding, got {type(raw)!r}"
+            )
 
         device = str(raw.get("device") or "").strip()
         control = str(raw.get("control") or "").strip()
@@ -45,7 +47,9 @@ class ActionBinding:
     context: str = ""
     target: str = ""
 
-    def with_defaults(self, *, context: str, default_target: str | None) -> ActionBinding:
+    def with_defaults(
+        self, *, context: str, default_target: str | None
+    ) -> ActionBinding:
         ctx = self.context or context
         tgt = self.target or (default_target or "")
         return ActionBinding(
@@ -67,7 +71,9 @@ class ActionBinding:
         if isinstance(raw, cls):
             return raw.with_defaults(context=context, default_target=default_target)
         if not isinstance(raw, dict):
-            raise TypeError(f"ActionBinding expects dict or ActionBinding, got {type(raw)!r}")
+            raise TypeError(
+                f"ActionBinding expects dict or ActionBinding, got {type(raw)!r}"
+            )
 
         action = str(raw.get("action") or "").strip()
         if not action:
@@ -114,6 +120,8 @@ def gather_input_actions(
 
     actions: list[ActionBinding] = []
     for item in raw_items:
-        action = ActionBinding.from_raw(item, context=context, default_target=default_target)
+        action = ActionBinding.from_raw(
+            item, context=context, default_target=default_target
+        )
         actions.append(action)
     return actions

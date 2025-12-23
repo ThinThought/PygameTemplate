@@ -2,8 +2,10 @@ from __future__ import annotations
 from typing import Protocol
 import pygame
 
+
 class AppLike(Protocol):
     running: bool
+
 
 class Scene:
     def on_enter(self, app: AppLike) -> None:

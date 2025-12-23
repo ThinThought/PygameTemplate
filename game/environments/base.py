@@ -7,6 +7,7 @@ import pygame
 
 class AppLike(Protocol):
     """Lo mínimo que una entidad puede necesitar del mundo."""
+
     pass
 
 

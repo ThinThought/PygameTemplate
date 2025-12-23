@@ -7,7 +7,9 @@ import pygame
 
 class AppLike(Protocol):
     """Lo mínimo que una entidad puede necesitar del mundo."""
+
     pass
+
 
 class Entity:
     """
@@ -17,6 +19,7 @@ class Entity:
     - No conoce input directamente
     - No gestiona el loop
     """
+
     def on_spawn(self, app: AppLike) -> None:
         """Se llama cuando la entidad entra en escena."""
         pass

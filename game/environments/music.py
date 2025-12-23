@@ -37,9 +37,15 @@ class MusicEnvironment(Environment):
 
     def on_spawn(self, app: AppLike) -> None:
         """Empieza a reproducir la pista configurada."""
-        track = self.track if isinstance(self.track, str) and self.track else self._default_track
+        track = (
+            self.track
+            if isinstance(self.track, str) and self.track
+            else self._default_track
+        )
         if not isinstance(self.track, str):
-            print("[MusicEnvironment] Track inválido en composición. Usando valor por defecto.")
+            print(
+                "[MusicEnvironment] Track inválido en composición. Usando valor por defecto."
+            )
         app.audio.play_music(
             track,
             volume=self.volume,

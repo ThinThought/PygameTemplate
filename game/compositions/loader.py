@@ -41,7 +41,11 @@ class CompositionRuntime:
             yield node.instance
 
     def _iter_tree_ids(self) -> Iterator[str]:
-        roots = [node_id for node_id in self.ordered_ids if self.nodes[node_id].parent is None]
+        roots = [
+            node_id
+            for node_id in self.ordered_ids
+            if self.nodes[node_id].parent is None
+        ]
 
         def _visit(node_id: str):
             yield node_id
@@ -114,7 +118,9 @@ def load_composition(path: str | Path) -> CompositionRuntime:
     )
 
 
-def _instantiate_type(type_path: str, transform: dict[str, Any], state: dict[str, Any]) -> Any:
+def _instantiate_type(
+    type_path: str, transform: dict[str, Any], state: dict[str, Any]
+) -> Any:
     cls = _resolve_type(type_path)
     pos = _vector_from(transform.get("position")) or pygame.Vector2(0, 0)
 
@@ -161,10 +167,14 @@ def _validate_parentage(nodes: dict[str, CompositionNode]) -> None:
         parent_id = node.parent
         if node.kind == "entity":
             if parent_id is None:
-                raise ValueError(f"Entity '{node.id}' must be parented to an environment")
+                raise ValueError(
+                    f"Entity '{node.id}' must be parented to an environment"
+                )
             parent = nodes[parent_id]
             if parent.kind != "environment":
-                raise ValueError(f"Entity '{node.id}' must live inside an environment (parent: {parent_id})")
+                raise ValueError(
+                    f"Entity '{node.id}' must live inside an environment (parent: {parent_id})"
+                )
             continue
 
         if node.kind == "environment":
@@ -172,10 +182,14 @@ def _validate_parentage(nodes: dict[str, CompositionNode]) -> None:
                 continue
             parent = nodes[parent_id]
             if parent.kind != "entity":
-                raise ValueError(f"Environment '{node.id}' can only hang from the root or an entity")
+                raise ValueError(
+                    f"Environment '{node.id}' can only hang from the root or an entity"
+                )
 
 
-def _apply_transform(instance: Any, transform: dict[str, Any], default_pos: pygame.Vector2) -> None:
+def _apply_transform(
+    instance: Any, transform: dict[str, Any], default_pos: pygame.Vector2
+) -> None:
     position = transform.get("position")
     if position is not None:
         vec = _vector_from(position) or default_pos
@@ -210,7 +224,11 @@ def _coerce_state_value(value: Any, current: Any) -> Any:
             return vec
     if isinstance(current, str):
         return value if isinstance(value, str) else current
-    if isinstance(value, list) and len(value) == 2 and all(isinstance(n, (int, float)) for n in value):
+    if (
+        isinstance(value, list)
+        and len(value) == 2
+        and all(isinstance(n, (int, float)) for n in value)
+    ):
         vec = _vector_from(value)
         if vec is not None and current is None:
             return vec

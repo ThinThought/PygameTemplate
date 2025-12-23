@@ -57,7 +57,9 @@ class InputTesterScene(Scene):
         self.events.clear()
         self._push(f"Joysticks detected: {len(self.joysticks)}")
         if self.joysticks:
-            self._push(f"Active joy: {self.active_joy} ({self.joy_infos[self.active_joy].name})")
+            self._push(
+                f"Active joy: {self.active_joy} ({self.joy_infos[self.active_joy].name})"
+            )
         else:
             self._push("No joystick found (ok on some devices).")
 
@@ -164,7 +166,9 @@ class InputTesterScene(Scene):
 
             if ev.key == pygame.K_TAB and self.joysticks:
                 self.active_joy = (self.active_joy + 1) % len(self.joysticks)
-                self._push(f"Active joy -> {self.active_joy} ({self.joy_infos[self.active_joy].name})")
+                self._push(
+                    f"Active joy -> {self.active_joy} ({self.joy_infos[self.active_joy].name})"
+                )
                 self._mark_snapshot_dirty()
                 return
 
@@ -210,9 +214,17 @@ class InputTesterScene(Scene):
         # Fonts relativas (solo si cambia tamaño)
         big_size = ps(0.06)
         small_size = ps(0.05)
-        if not self.font or self.font.get_height() < big_size - 2 or self.font.get_height() > big_size + 2:
+        if (
+            not self.font
+            or self.font.get_height() < big_size - 2
+            or self.font.get_height() > big_size + 2
+        ):
             self.font = pygame.font.Font(None, big_size)
-        if not self.small or self.small.get_height() < small_size - 2 or self.small.get_height() > small_size + 2:
+        if (
+            not self.small
+            or self.small.get_height() < small_size - 2
+            or self.small.get_height() > small_size + 2
+        ):
             self.small = pygame.font.Font(None, small_size)
 
         screen.fill((10, 10, 10))
@@ -222,7 +234,7 @@ class InputTesterScene(Scene):
         pad_y = py(0.03)
         gutter = px(0.03)
 
-        left_w = px(0.45)   # panel principal
+        left_w = px(0.45)  # panel principal
         right_x = pad_x + left_w + gutter
         right_w = w - right_x - pad_x
 
@@ -248,13 +260,17 @@ class InputTesterScene(Scene):
             # clamp
             v = max(-1.0, min(1.0, value))
             # fondo
-            pygame.draw.rect(screen, (55, 55, 55), (bx, by, bw, bh), border_radius=ps(0.010))
+            pygame.draw.rect(
+                screen, (55, 55, 55), (bx, by, bw, bh), border_radius=ps(0.010)
+            )
             # centro
             mid = bx + bw // 2
             pygame.draw.line(screen, (110, 110, 110), (mid, by), (mid, by + bh), 1)
             # relleno
             fill = int((v + 1.0) * 0.5 * bw)
-            pygame.draw.rect(screen, (200, 200, 80), (bx, by, fill, bh), border_radius=ps(0.010))
+            pygame.draw.rect(
+                screen, (200, 200, 80), (bx, by, fill, bh), border_radius=ps(0.010)
+            )
 
         # Panel izquierdo (estado)
         draw_header("Input Test (relative layout)")
@@ -267,14 +283,19 @@ class InputTesterScene(Scene):
             js = self.joysticks[self.active_joy]
 
             draw_line(f"Active joy: {info.idx} | {info.name}", big=False)
-            draw_line(f"Buttons: {info.buttons} | Axes: {info.axes} | Hats: {info.hats}", big=False)
+            draw_line(
+                f"Buttons: {info.buttons} | Axes: {info.axes} | Hats: {info.hats}",
+                big=False,
+            )
             draw_line("TAB: switch joy | R: rescan | ESC: quit", big=False)
 
             y += py(0.01)
 
             pressed_idx = [i for i in range(info.buttons) if js.get_button(i)]
             if pressed_idx:
-                pressed_label = ", ".join(self._controller_button_label(i) for i in pressed_idx)
+                pressed_label = ", ".join(
+                    self._controller_button_label(i) for i in pressed_idx
+                )
             else:
                 pressed_label = "None"
             draw_line(f"Pressed buttons: {pressed_label}", big=False)
@@ -315,7 +336,9 @@ class InputTesterScene(Scene):
                     y += bar_h + py(0.014)
 
                 if info.axes > axes_to_show:
-                    draw_line(f"... ({info.axes - axes_to_show} more axes hidden)", big=False)
+                    draw_line(
+                        f"... ({info.axes - axes_to_show} more axes hidden)", big=False
+                    )
 
         dict_gap = py(0.02)
         dict_height = int(h * 0.45)
@@ -329,7 +352,9 @@ class InputTesterScene(Scene):
         self._render_action_dictionary(screen, dict_rect)
         self._render_event_log(screen, log_rect)
 
-    def _render_action_dictionary(self, screen: pygame.Surface, rect: pygame.Rect) -> None:
+    def _render_action_dictionary(
+        self, screen: pygame.Surface, rect: pygame.Rect
+    ) -> None:
         if rect.width <= 0 or rect.height <= 0:
             return
 
@@ -355,7 +380,9 @@ class InputTesterScene(Scene):
             y += header.get_height() + 4
 
             if not actions:
-                empty = self.small.render("No bindings detected.", True, (130, 130, 130))
+                empty = self.small.render(
+                    "No bindings detected.", True, (130, 130, 130)
+                )
                 screen.blit(empty, (rect.x + 20, y))
                 y += empty.get_height() + section_gap
                 continue
@@ -365,17 +392,23 @@ class InputTesterScene(Scene):
                     ellipsis = self.small.render("...", True, (200, 200, 200))
                     screen.blit(ellipsis, (rect.x + 14, y))
                     return
-                title_line = self.small.render(f"{action.target} · {action.action}", True, (220, 220, 220))
+                title_line = self.small.render(
+                    f"{action.target} · {action.action}", True, (220, 220, 220)
+                )
                 screen.blit(title_line, (rect.x + 20, y))
                 y += title_line.get_height() + 2
 
-                bindings_text = ", ".join(self._format_binding(b) for b in action.bindings)
+                bindings_text = ", ".join(
+                    self._format_binding(b) for b in action.bindings
+                )
                 bindings_line = self.small.render(bindings_text, True, (180, 180, 180))
                 screen.blit(bindings_line, (rect.x + 32, y))
                 y += bindings_line.get_height() + section_gap
 
         if self._action_dictionary_error:
-            err = self.small.render(self._action_dictionary_error, True, (220, 130, 130))
+            err = self.small.render(
+                self._action_dictionary_error, True, (220, 130, 130)
+            )
             screen.blit(err, (rect.x + 14, rect.bottom - err.get_height() - 6))
 
     def _render_event_log(self, screen: pygame.Surface, rect: pygame.Rect) -> None:
@@ -404,7 +437,9 @@ class InputTesterScene(Scene):
             return
 
         try:
-            self.controller_profile = ControllerProfile.from_toml(self._controller_cfg_path)
+            self.controller_profile = ControllerProfile.from_toml(
+                self._controller_cfg_path
+            )
         except (OSError, ValueError) as exc:
             self._push(f"No se pudo leer controller profile: {exc}")
             self.controller_profile = ControllerProfile.default()
@@ -413,7 +448,9 @@ class InputTesterScene(Scene):
     def _refresh_action_dictionary(self) -> None:
         contexts: dict[str, list] = {"entities": [], "editor": []}
         try:
-            contexts["editor"] = gather_input_actions(EditorScene, context="editor", default_target="Editor")
+            contexts["editor"] = gather_input_actions(
+                EditorScene, context="editor", default_target="Editor"
+            )
         except Exception as exc:
             self._action_dictionary_error = f"Editor bindings invalid: {exc}"
             self._action_dictionary = contexts
@@ -436,7 +473,9 @@ class InputTesterScene(Scene):
                 actions = gather_input_actions(
                     node.instance,
                     context="entity",
-                    default_target=getattr(node.instance, "__class__", type(node.instance)).__name__,
+                    default_target=getattr(
+                        node.instance, "__class__", type(node.instance)
+                    ).__name__,
                 )
             except Exception as exc:
                 self._push(f"Input metadata error in {node.id}: {exc}")

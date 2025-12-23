@@ -112,11 +112,15 @@ def _parse_controls(entries: Any) -> dict[str, ControlDefinition]:
         if not isinstance(idx, int):
             continue
         label = entry.get("label")
-        result[name] = ControlDefinition(name=name, index=idx, label=str(label) if label else None)
+        result[name] = ControlDefinition(
+            name=name, index=idx, label=str(label) if label else None
+        )
     return result
 
 
-def _lookup_control(mapping: dict[str, ControlDefinition], control: str | int) -> ControlDefinition | None:
+def _lookup_control(
+    mapping: dict[str, ControlDefinition], control: str | int
+) -> ControlDefinition | None:
     if isinstance(control, str):
         return mapping.get(control.strip().lower())
     if not isinstance(control, int):

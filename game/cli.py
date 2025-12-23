@@ -13,7 +13,7 @@ _COPY_FILES = (
     "README.md",
     "deploy_to_console.sh",
     "uv.lock",
-    "PygameTemplate.pygame",
+    "PygameVideogameMaker.pygame",
 )
 _IGNORE_PATTERNS = shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", "*.py[co]")
 
@@ -26,7 +26,9 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.set_defaults(func=_run_game)
     subparsers = parser.add_subparsers(dest="command")
 
-    run_parser = subparsers.add_parser("run", help="Ejecuta el juego definido en la plantilla.")
+    run_parser = subparsers.add_parser(
+        "run", help="Ejecuta el juego definido en la plantilla."
+    )
     run_parser.set_defaults(func=_run_game)
 
     new_parser = subparsers.add_parser(
@@ -61,7 +63,9 @@ def _generate_project(args: argparse.Namespace) -> None:
     template_root = Path(__file__).resolve().parents[1]
 
     if destination.exists():
-        raise SystemExit(f"La ruta destino '{destination}' ya existe. Elige otra carpeta.")
+        raise SystemExit(
+            f"La ruta destino '{destination}' ya existe. Elige otra carpeta."
+        )
 
     destination.mkdir(parents=True)
 
@@ -69,7 +73,9 @@ def _generate_project(args: argparse.Namespace) -> None:
         src = template_root / folder
         if not src.exists():
             continue
-        shutil.copytree(src, destination / folder, dirs_exist_ok=True, ignore=_IGNORE_PATTERNS)
+        shutil.copytree(
+            src, destination / folder, dirs_exist_ok=True, ignore=_IGNORE_PATTERNS
+        )
 
     for file_name in _COPY_FILES:
         src_file = template_root / file_name
@@ -79,7 +85,9 @@ def _generate_project(args: argparse.Namespace) -> None:
         shutil.copy2(src_file, destination / file_name)
 
     name_tokens = _tokenize_name(args.name)
-    slug = _slugify("-".join(name_tokens)) if name_tokens else _slugify(destination.name)
+    slug = (
+        _slugify("-".join(name_tokens)) if name_tokens else _slugify(destination.name)
+    )
     readable_name = _to_display_name(name_tokens) if name_tokens else destination.name
     launcher_stub = _to_pascal_case(name_tokens)
 
@@ -87,7 +95,11 @@ def _generate_project(args: argparse.Namespace) -> None:
     _rename_launcher(destination, launcher_stub)
     _rewrite_readme(destination / "README.md", readable_name)
 
-    rel_path = destination.relative_to(Path.cwd()) if destination.is_relative_to(Path.cwd()) else destination
+    rel_path = (
+        destination.relative_to(Path.cwd())
+        if destination.is_relative_to(Path.cwd())
+        else destination
+    )
     print(f"Proyecto generado en: {rel_path}")
 
 
@@ -123,10 +135,12 @@ def _rewrite_pyproject(pyproject_path: Path, project_slug: str) -> None:
         return
 
     content = pyproject_path.read_text(encoding="utf-8")
-    content = re.sub(r'(?m)^name\s*=\s*".*"$', f'name = "{project_slug}"', content, count=1)
+    content = re.sub(
+        r'(?m)^name\s*=\s*".*"$', f'name = "{project_slug}"', content, count=1
+    )
     content = re.sub(
         r'(?m)^(\s*)pygametemplate\s*=\s*".*"$',
-        r'\1' + f'{project_slug} = "game.cli:main"',
+        r"\1" + f'{project_slug} = "game.cli:main"',
         content,
         count=1,
     )
@@ -134,7 +148,7 @@ def _rewrite_pyproject(pyproject_path: Path, project_slug: str) -> None:
 
 
 def _rename_launcher(project_root: Path, launcher_stub: str) -> None:
-    original_launcher = project_root / "PygameTemplate.pygame"
+    original_launcher = project_root / "PygameVideogameMaker.pygame"
     if not original_launcher.exists():
         return
     new_name = project_root / f"{launcher_stub or 'Game'}.pygame"

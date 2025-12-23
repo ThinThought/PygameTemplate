@@ -4,7 +4,9 @@ import pygame
 class GameClock:
     """Wrapper around pygame.time.Clock that filters dt spikes for physics."""
 
-    def __init__(self, fps: int, *, spike_limit: float = 2.5, smoothing: float = 0.25) -> None:
+    def __init__(
+        self, fps: int, *, spike_limit: float = 2.5, smoothing: float = 0.25
+    ) -> None:
         self._clock = pygame.time.Clock()
         self._fps = max(1, int(fps))
 

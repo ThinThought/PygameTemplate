@@ -39,7 +39,9 @@ class PaletteRegistry:
         return None
 
     @classmethod
-    def from_modules(cls, entities_mod: Any, environments_mod: Any) -> "PaletteRegistry":
+    def from_modules(
+        cls, entities_mod: Any, environments_mod: Any
+    ) -> "PaletteRegistry":
         return cls(
             list(_iter_items(entities_mod, "entity")),
             list(_iter_items(environments_mod, "environment")),

@@ -49,7 +49,8 @@ class ForceEnvironment(Environment):
             self._force_vec = pygame.Vector2(0, 0)
 
         for entity in self._iter_child_mass_entities():
-            entity.apply_force(self._force_vec)
+            # magnitude = m/s² (9.81) y direction normalizada
+            entity.apply_acceleration(self._direction * self.magnitude)
             if self.auto_integrate:
                 entity.integrate(dt)
 

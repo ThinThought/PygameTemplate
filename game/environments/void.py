@@ -48,8 +48,20 @@ class VoidEnvironment(Environment):
 
         if self.crosshair:
             arm = max(4, radius // 2)
-            pygame.draw.line(screen, color, (center[0] - arm, center[1]), (center[0] + arm, center[1]), width=1)
-            pygame.draw.line(screen, color, (center[0], center[1] - arm), (center[0], center[1] + arm), width=1)
+            pygame.draw.line(
+                screen,
+                color,
+                (center[0] - arm, center[1]),
+                (center[0] + arm, center[1]),
+                width=1,
+            )
+            pygame.draw.line(
+                screen,
+                color,
+                (center[0], center[1] - arm),
+                (center[0], center[1] + arm),
+                width=1,
+            )
 
     @staticmethod
     def _to_color(value: pygame.Color | str | tuple[int, int, int]) -> pygame.Color:

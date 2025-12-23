@@ -8,9 +8,7 @@ import pygame
 from game.environments.base import Environment, AppLike
 
 
-DEFAULT_LAYER_PATHS: tuple[str, ...] = (
-    "images/backgrounds/bg1/bg_sky.png",
-)
+DEFAULT_LAYER_PATHS: tuple[str, ...] = ("images/backgrounds/bg1/bg_sky.png",)
 
 
 class BackgroundEnvironment(Environment):
@@ -90,7 +88,9 @@ class BackgroundEnvironment(Environment):
         self._surface = composed.convert_alpha()
         self._surface_size = size
 
-    def _load_layer(self, layer_path: str, app: AppLike, size: tuple[int, int]) -> pygame.Surface | None:
+    def _load_layer(
+        self, layer_path: str, app: AppLike, size: tuple[int, int]
+    ) -> pygame.Surface | None:
         resolved_path = self._resolve_layer_path(app, layer_path)
         if resolved_path is None:
             print(f"[BackgroundEnvironment] Ruta inválida para capa: {layer_path!r}")

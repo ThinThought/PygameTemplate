@@ -49,7 +49,10 @@ class EditorModel:
         self.nodes: dict[int, Node] = {}
         self._order: list[int] = []
         self._label_counts: dict[str, int] = {}
-        self._composition_id_counts: dict[PaletteKind, int] = {"entity": 0, "environment": 0}
+        self._composition_id_counts: dict[PaletteKind, int] = {
+            "entity": 0,
+            "environment": 0,
+        }
         self._next_id = 1
         self.root_id = self._create_root()
         self.selected_id: int | None = None
@@ -116,7 +119,9 @@ class EditorModel:
             return False
         return self._parent_allows(reference.parent, child_kind)
 
-    def _resolve_parent(self, child_kind: PaletteKind, parent_hint: int | None) -> int | None:
+    def _resolve_parent(
+        self, child_kind: PaletteKind, parent_hint: int | None
+    ) -> int | None:
         """Pick the nearest valid parent that satisfies the entity-environment model."""
         candidates: list[int | None] = [parent_hint]
 
@@ -145,7 +150,9 @@ class EditorModel:
         }
         return parent.kind in allowed[child_kind]
 
-    def _attach_child(self, parent_id: int, child_id: int, index: int | None = None) -> None:
+    def _attach_child(
+        self, parent_id: int, child_id: int, index: int | None = None
+    ) -> None:
         parent = self.nodes.get(parent_id)
         if parent is None:
             return
@@ -187,7 +194,9 @@ class EditorModel:
         self.nodes[root.id] = root
         return root.id
 
-    def _create_node(self, item: PaletteItem, position: tuple[int, int], parent_id: int) -> Node:
+    def _create_node(
+        self, item: PaletteItem, position: tuple[int, int], parent_id: int
+    ) -> Node:
         payload = item.factory(pygame.Vector2(position))
         label = self._make_label(item.name)
         node = Node(
@@ -210,7 +219,9 @@ class EditorModel:
             return None
         return idx if before else idx + 1
 
-    def _child_index_near(self, parent_id: int, reference_id: int, *, before: bool) -> int | None:
+    def _child_index_near(
+        self, parent_id: int, reference_id: int, *, before: bool
+    ) -> int | None:
         parent = self.nodes.get(parent_id)
         if parent is None:
             return None
@@ -305,7 +316,9 @@ class EditorModel:
         self.select_node(best_id)
         return best_id
 
-    def move_selected_within(self, canvas_rect: pygame.Rect, desired: pygame.Vector2) -> None:
+    def move_selected_within(
+        self, canvas_rect: pygame.Rect, desired: pygame.Vector2
+    ) -> None:
         node = self.selected_node()
         if node is None or node.payload is None:
             return
@@ -330,7 +343,11 @@ class EditorModel:
             return
         parent_id = node.parent
         self._remove_subtree(node.id)
-        if parent_id is not None and parent_id in self.nodes and parent_id != self.root_id:
+        if (
+            parent_id is not None
+            and parent_id in self.nodes
+            and parent_id != self.root_id
+        ):
             self.selected_id = parent_id
         elif self._order:
             self.selected_id = self._order[-1]
@@ -433,7 +450,9 @@ class EditorModel:
         data = self.build_composition(metadata=metadata, scene=scene)
         file_path = Path(path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        file_path.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
         return file_path
 
     # ----- Helpers -----
@@ -472,7 +491,9 @@ class EditorModel:
         parent_id = self._parent_composition_id(node)
         transform = self._extract_transform(payload)
         state = self._extract_state(payload)
-        children = [self.nodes[cid].composition_id for cid in node.children if cid in self.nodes]
+        children = [
+            self.nodes[cid].composition_id for cid in node.children if cid in self.nodes
+        ]
 
         return {
             "id": node.composition_id,

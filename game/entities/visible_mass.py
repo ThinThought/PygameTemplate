@@ -68,8 +68,12 @@ class VisibleMassEntity(MassEntity):
         center = rect.center
 
         # Blindaje: si alguien pisó self.color con un str, lo re-coercemos aquí.
-        fill = self._to_color(getattr(self, "color", (76, 139, 245)), fallback=(76, 139, 245))
-        outline = self._to_color(getattr(self, "outline_color", (18, 44, 92)), fallback=(18, 44, 92))
+        fill = self._to_color(
+            getattr(self, "color", (76, 139, 245)), fallback=(76, 139, 245)
+        )
+        outline = self._to_color(
+            getattr(self, "outline_color", (18, 44, 92)), fallback=(18, 44, 92)
+        )
 
         pygame.draw.rect(screen, fill, rect, border_radius=4)
         pygame.draw.rect(screen, outline, rect, width=2, border_radius=4)
@@ -194,11 +198,15 @@ class VisibleMassEntity(MassEntity):
         tip = pygame.Vector2(center) + direction * (self._half_size() + 16)
         pygame.draw.line(screen, outline, center, tip, 2)
 
-    def _draw_mass_label(self, app: AppLike, screen: pygame.Surface, center: tuple[int, int]) -> None:
+    def _draw_mass_label(
+        self, app: AppLike, screen: pygame.Surface, center: tuple[int, int]
+    ) -> None:
         font = getattr(app, "hud_font", None) or self._get_label_font()
 
         # Blindaje otra vez por si label_color fue pisado
-        label = self._to_color(getattr(self, "label_color", (255, 255, 255)), fallback=(255, 255, 255))
+        label = self._to_color(
+            getattr(self, "label_color", (255, 255, 255)), fallback=(255, 255, 255)
+        )
 
         text = font.render(f"{self.mass:.2f}", True, label)
         rect = text.get_rect(center=center)
@@ -230,11 +238,21 @@ class VisibleMassEntity(MassEntity):
         try:
             if isinstance(value, pygame.Color):
                 c = pygame.Color(value)
-                return pygame.Color(cls._clamp8(c.r), cls._clamp8(c.g), cls._clamp8(c.b), cls._clamp8(c.a))
+                return pygame.Color(
+                    cls._clamp8(c.r),
+                    cls._clamp8(c.g),
+                    cls._clamp8(c.b),
+                    cls._clamp8(c.a),
+                )
 
             if isinstance(value, str):
                 c = pygame.Color(value)  # falla si el nombre no existe
-                return pygame.Color(cls._clamp8(c.r), cls._clamp8(c.g), cls._clamp8(c.b), cls._clamp8(c.a))
+                return pygame.Color(
+                    cls._clamp8(c.r),
+                    cls._clamp8(c.g),
+                    cls._clamp8(c.b),
+                    cls._clamp8(c.a),
+                )
 
             if isinstance(value, (tuple, list)):
                 if len(value) == 3:
@@ -242,7 +260,9 @@ class VisibleMassEntity(MassEntity):
                     return pygame.Color(cls._clamp8(r), cls._clamp8(g), cls._clamp8(b))
                 if len(value) == 4:
                     r, g, b, a = value
-                    return pygame.Color(cls._clamp8(r), cls._clamp8(g), cls._clamp8(b), cls._clamp8(a))
+                    return pygame.Color(
+                        cls._clamp8(r), cls._clamp8(g), cls._clamp8(b), cls._clamp8(a)
+                    )
 
         except (ValueError, TypeError):
             pass

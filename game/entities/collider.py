@@ -19,7 +19,9 @@ class ColliderEntity(Entity):
       cobertura para que puedan comportarse como una sola plataforma.
     """
 
-    _spaces: weakref.WeakKeyDictionary[Any, _ColliderSpace] = weakref.WeakKeyDictionary()
+    _spaces: weakref.WeakKeyDictionary[Any, _ColliderSpace] = (
+        weakref.WeakKeyDictionary()
+    )
 
     def __init__(
         self,
@@ -29,7 +31,12 @@ class ColliderEntity(Entity):
         collider_offset: pygame.Vector2 | tuple[float, float] | None = None,
         visible: bool = False,
         debug_outline_color: pygame.Color | str | tuple[int, int, int] = (40, 146, 255),
-        debug_fill_color: pygame.Color | str | tuple[int, int, int, int] = (40, 146, 255, 60),
+        debug_fill_color: pygame.Color | str | tuple[int, int, int, int] = (
+            40,
+            146,
+            255,
+            60,
+        ),
     ) -> None:
         self.pos = pygame.Vector2(pos) if pos is not None else pygame.Vector2(0, 0)
         self.size = self._coerce_size(size)
@@ -71,7 +78,9 @@ class ColliderEntity(Entity):
             return
 
         pygame.draw.rect(screen, self.debug_fill_color, self.rect, border_radius=4)
-        pygame.draw.rect(screen, self.debug_outline_color, self.rect, width=1, border_radius=4)
+        pygame.draw.rect(
+            screen, self.debug_outline_color, self.rect, width=1, border_radius=4
+        )
 
     # ------------------------------------------------------------------
     @property
@@ -79,7 +88,9 @@ class ColliderEntity(Entity):
         return self._debug_outline_color
 
     @debug_outline_color.setter
-    def debug_outline_color(self, value: pygame.Color | str | tuple[int, int, int]) -> None:
+    def debug_outline_color(
+        self, value: pygame.Color | str | tuple[int, int, int]
+    ) -> None:
         color = self._to_color(value, self._debug_outline_fallback)
         self._debug_outline_color = color
         self._debug_outline_fallback = (color.r, color.g, color.b)
@@ -89,7 +100,9 @@ class ColliderEntity(Entity):
         return self._debug_fill_color
 
     @debug_fill_color.setter
-    def debug_fill_color(self, value: pygame.Color | str | tuple[int, int, int, int]) -> None:
+    def debug_fill_color(
+        self, value: pygame.Color | str | tuple[int, int, int, int]
+    ) -> None:
         color = self._to_color(value, self._debug_fill_fallback)
         self._debug_fill_color = color
         self._debug_fill_fallback = (color.r, color.g, color.b, color.a)
@@ -103,7 +116,9 @@ class ColliderEntity(Entity):
         top_left = center - half
         width = max(1, int(round(self.size.x)))
         height = max(1, int(round(self.size.y)))
-        return pygame.Rect(int(round(top_left.x)), int(round(top_left.y)), width, height)
+        return pygame.Rect(
+            int(round(top_left.x)), int(round(top_left.y)), width, height
+        )
 
     @property
     def coverage_rect(self) -> pygame.Rect:
@@ -179,7 +194,9 @@ class ColliderEntity(Entity):
         self._group_rect = pygame.Rect(rect) if rect is not None else None
 
     @staticmethod
-    def _coerce_size(size: pygame.Vector2 | tuple[float, float] | None) -> pygame.Vector2:
+    def _coerce_size(
+        size: pygame.Vector2 | tuple[float, float] | None,
+    ) -> pygame.Vector2:
         if isinstance(size, pygame.Vector2):
             dims = pygame.Vector2(size)
         elif isinstance(size, (tuple, list)) and len(size) == 2:
@@ -191,7 +208,9 @@ class ColliderEntity(Entity):
         return dims
 
     @staticmethod
-    def _coerce_offset(offset: pygame.Vector2 | tuple[float, float] | None) -> pygame.Vector2:
+    def _coerce_offset(
+        offset: pygame.Vector2 | tuple[float, float] | None,
+    ) -> pygame.Vector2:
         if isinstance(offset, pygame.Vector2):
             return pygame.Vector2(offset)
         if isinstance(offset, (tuple, list)) and len(offset) == 2:
@@ -199,7 +218,9 @@ class ColliderEntity(Entity):
         return pygame.Vector2(0.0, 0.0)
 
     @staticmethod
-    def _to_color(value, fallback: tuple[int, int, int] | tuple[int, int, int, int]) -> pygame.Color:
+    def _to_color(
+        value, fallback: tuple[int, int, int] | tuple[int, int, int, int]
+    ) -> pygame.Color:
         try:
             if isinstance(value, pygame.Color):
                 return pygame.Color(value)

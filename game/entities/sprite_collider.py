@@ -73,7 +73,9 @@ class SpriteColliderMixin:
     def _load_sprite(self, app: AppLike) -> pygame.Surface | None:
         path = self._resolve_asset_path(app)
         if path is None:
-            print(f"[{self.__class__.__name__}] Ruta de asset inválida: {self.SPRITE_PATH!r}")
+            print(
+                f"[{self.__class__.__name__}] Ruta de asset inválida: {self.SPRITE_PATH!r}"
+            )
             return None
 
         if not path.exists():

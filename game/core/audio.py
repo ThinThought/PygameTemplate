@@ -15,7 +15,9 @@ class AudioManager:
 
     # ---------- INIT ----------
 
-    def init(self, *, frequency: int = 44100, channels: int = 2, buffer: int = 512) -> None:
+    def init(
+        self, *, frequency: int = 44100, channels: int = 2, buffer: int = 512
+    ) -> None:
         if not pygame.mixer.get_init():
             pygame.mixer.init(
                 frequency=frequency,
