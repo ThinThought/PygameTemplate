@@ -31,6 +31,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     run_parser.set_defaults(func=_run_game)
 
+    editor_parser = subparsers.add_parser(
+        "editor", help="Inicia el editor del juego."
+    )
+    editor_parser.set_defaults(func=_run_editor)
+
     new_parser = subparsers.add_parser(
         "new",
         help="Genera un nuevo proyecto copiando los archivos de la plantilla.",
@@ -56,6 +61,14 @@ def _run_game(_: argparse.Namespace) -> None:
     from game.main import main as run_game
 
     run_game()
+
+
+def _run_editor() -> None:
+    from game.core.app import App
+    from game.scenes.editor import EditorScene
+
+    app = App(scene_classes=[EditorScene])
+    app.run()
 
 
 def _generate_project(args: argparse.Namespace) -> None:
