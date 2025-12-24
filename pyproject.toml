@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pygame-videogame-maker"
 authors = [{ name = "Diego Delgado Chaves", email = "diedelcha@gmail.com" }]
-version = "1.0.4"
+version = "1.0.5"
 description = "Minimal Pygame scaffold (window + loop)"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,10 +18,14 @@ dependencies = [
 [project.scripts]
 pygame-editor = "game.cli:main"
 
+# ✅ En vez de packages=["game"], usa find para incluir subpaquetes
 [tool.setuptools]
-packages = ["game"]
 package-dir = { "" = "." }
 include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["game*"]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["*.pyc", "*.pyo", "__pycache__/*"]
