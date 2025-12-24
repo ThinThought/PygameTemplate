@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pygame-videogame-maker"
 authors = [{ name = "Diego Delgado Chaves", email = "diedelcha@gmail.com" }]
-version = "1.0.2"
+version = "1.0.3"
 description = "Minimal Pygame scaffold (window + loop)"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,5 +20,25 @@ pygame-editor = "game.cli:main"
 
 [tool.setuptools]
 packages = ["game"]
-package-dir = {"" = "."}
+package-dir = { "" = "." }
 include-package-data = true
+
+# Evita basura típica en builds
+[tool.setuptools.exclude-package-data]
+"*" = ["*.pyc", "*.pyo", "__pycache__/*"]
+
+# --- IMPORTANTE ---
+# Esto mete recursos FUERA de "game/" dentro del wheel, instalándolos en
+# <prefix>/share/pygame-videogame-maker/...
+# (así no dependes de MANIFEST.in para el wheel)
+[tool.setuptools.data-files]
+"share/pygame-videogame-maker" = [
+  "assets/**/*",
+  "configs/**/*",
+  "scripts/**/*",
+  "PygameVideogameMaker.pygame",
+  "TheEntityEnvironmentModel",
+  "TheEntityEnvironmentModel.md",
+  "README.md",
+  "uv.lock",
+]

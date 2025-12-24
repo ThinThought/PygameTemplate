@@ -1,3 +1,19 @@
-graft assets
-graft configs
-graft docs
+# Incluye documentación y ficheros “root”
+include README.md
+include TheEntityEnvironmentModel.md
+include TheEntityEnvironmentModel
+include PygameVideogameMaker.pygame
+include pyproject.toml
+include uv.lock
+
+# Incluye recursos del repo (para sdist)
+recursive-include assets *
+recursive-include configs *
+recursive-include scripts *
+
+# Limpieza de basura
+global-exclude *.py[cod]
+global-exclude __pycache__/*
+prune **/__pycache__
+prune build
+prune dist
