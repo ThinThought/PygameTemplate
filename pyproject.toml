@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pygame-videogame-maker"
 authors = [{ name = "Diego Delgado Chaves", email = "diedelcha@gmail.com" }]
-version = "1.0.3"
+version = "1.0.4"
 description = "Minimal Pygame scaffold (window + loop)"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,22 +23,37 @@ packages = ["game"]
 package-dir = { "" = "." }
 include-package-data = true
 
-# Evita basura típica en builds
 [tool.setuptools.exclude-package-data]
 "*" = ["*.pyc", "*.pyo", "__pycache__/*"]
 
-# --- IMPORTANTE ---
-# Esto mete recursos FUERA de "game/" dentro del wheel, instalándolos en
-# <prefix>/share/pygame-videogame-maker/...
-# (así no dependes de MANIFEST.in para el wheel)
+# ⚠️ data-files: SOLO ficheros, NO directorios
 [tool.setuptools.data-files]
 "share/pygame-videogame-maker" = [
-  "assets/**/*",
-  "configs/**/*",
-  "scripts/**/*",
+  # root files
+  "README.md",
+  "uv.lock",
   "PygameVideogameMaker.pygame",
   "TheEntityEnvironmentModel",
   "TheEntityEnvironmentModel.md",
-  "README.md",
-  "uv.lock",
+
+  # configs (solo ficheros)
+  "configs/**/*.toml",
+  "configs/**/*.json",
+
+  # assets (solo ficheros por extensión)
+  "assets/**/*.png",
+  "assets/**/*.jpg",
+  "assets/**/*.jpeg",
+  "assets/**/*.webp",
+  "assets/**/*.wav",
+  "assets/**/*.mp3",
+  "assets/**/*.ogg",
+  "assets/**/*.ttf",
+  "assets/**/*.otf",
+
+  # si tienes “archivos sin extensión” (como font_placeholder)
+  "assets/**/font_placeholder",
+
+  # scripts (solo ficheros)
+  "scripts/**/*.py",
 ]
