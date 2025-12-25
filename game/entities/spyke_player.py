@@ -116,75 +116,7 @@ class SpykePlayer(PlayableMassEntity):
         if assets_root is not None and hasattr(assets_root, "path"):
             base_dir = Path(assets_root.path(self.SPRITE_BASE))
         else:
-            base_dir = Path(__file__).resolve().parents[2] / "assets" / self.SPRITE_BASE
-
-        self.anim = SpriteAnimator(base_dir, size=self.SPRITE_SIZE)
-        self.anim.load_clip("idle", fps=self.IDLE_FPS, loop=True)
-        self.anim.load_clip("walk", fps=self.WALK_FPS, loop=True)
-        self.anim.load_clip("jump", fps=self.JUMP_FPS, loop=True)
-
-    def update(self, app: Any, dt: float) -> None:
-        # --- tu lógica existente ---
-        self._bind_runtime(app)
-
-        grounded = bool(getattr(self, "grounded", False))
-        ppm = float(getattr(self, "PIXELS_PER_METER", 100.0))
-
-        move_dir = 0
-        if self._left and not self._right:
-            move_dir = -1
-        elif self._right and not self._left:
-            move_dir = 1
-
-        vx_mps = self.velocity.x / ppm
-
-        accel = self.GROUND_ACCEL if grounded else self.AIR_ACCEL
-        damping = self.GROUND_DAMPING if grounded else self.AIR_DAMPING
-
-        if move_dir != 0:
-            ax = move_dir * accel
-            self.apply_force((self.mass * ax, 0.0))
-        else:
-            self.apply_force((-self.mass * damping * vx_mps, 0.0))
-
-        vmax_px = self.MAX_SPEED_X * ppm
-        self.velocity.x = max(-vmax_px, min(vmax_px, self.velocity.x))
-
-        if self._jump_pressed and grounded and not self._is_jumping:
-            self._start_jump()
-
-        if self._jump_time_left > 0.0 and self._is_jumping and self._jump_pressed:
-            self.apply_force((0.0, -self.mass * self.JUMP_HOLD_ACCEL))
-            self._jump_time_left -= dt
-            if self._jump_time_left <= 0.0:
-                self._jump_time_left = 0.0
-                self._is_jumping = False
-
-        self._apply_platform_collisions()
-        super().update(app, dt)
-
-        if getattr(self, "grounded", False):
-            self._jump_time_left = 0.0
-            self._is_jumping = False
-            if self.velocity.y > 0.0:
-                self.velocity.y = 0.0
-
-        # --- anim state box ---
-        self._jump_pressed = False
-        self._jump_time_left = 0.0
-        self._is_jumping = False
-
-        self.anim: SpriteAnimator | None = None
-
-    def on_spawn(self, app: Any) -> None:
-        super().on_spawn(app)
-
-        # Resuelve assets root como ya haces en tu mixin
-        assets_root = getattr(app, "resources", None)
-        if assets_root is not None and hasattr(assets_root, "path"):
-            base_dir = Path(assets_root.path(self.SPRITE_BASE))
-        else:
-            base_dir = Path(__file__).resolve().parents[2] / "assets" / self.SPRITE_BASE
+            base_dir = Path(__file__).resolve().parents[1] / "assets" / self.SPRITE_BASE
 
         self.anim = SpriteAnimator(base_dir, size=self.SPRITE_SIZE)
         self.anim.load_clip("idle", fps=self.IDLE_FPS, loop=True)
@@ -339,4 +271,4 @@ class SpykePlayer(PlayableMassEntity):
         if assets_root is not None and hasattr(assets_root, "path"):
             return Path(assets_root.path(cls.SPRITE_BASE))
 
-        return Path(__file__).resolve().parents[2] / "assets" / cls.SPRITE_BASE
+        return Path(__file__).resolve().parents[1] / "assets" / cls.SPRITE_BASE

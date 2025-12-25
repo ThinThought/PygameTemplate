@@ -70,7 +70,7 @@ def _run_editor(_: argparse.Namespace) -> None:
     from game.scenes.editor import EditorScene
     import sys # Import sys for sys.exit
 
-    cfg = load_window_config(_share_path("configs/settings.toml"))
+    cfg = load_window_config(_share_path("configs", "settings.toml"))
     app = App(cfg)
 
     editor_scene_index = -1

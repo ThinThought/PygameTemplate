@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pygame-videogame-maker"
-version = "1.0.7"
+version = "1.0.8"
 description = "A simple videogame maker using Pygame."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -44,8 +44,3 @@ include = ["game*"]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["*.pyc", "*.pyo", "__pycache__/*"]
-
-[tool.setuptools.data-files]
-"share/pygame-videogame-maker/configs" = [
-  "configs/settings.toml",
-]

@@ -126,7 +126,7 @@ class BackgroundEnvironment(Environment):
             except TypeError:
                 pass
 
-        root = Path(__file__).resolve().parents[2] / "assets"
+        root = Path(__file__).resolve().parents[1] / "assets"
         return root / candidate
 
     @staticmethod

@@ -1,6 +1,6 @@
 # Formato de composición EEI
 
-Este formato describe cómo serializar una composición del modelo **Entity-Environment-Interaction** (EEI) que usa el editor. Está pensado para archivos `*.eei.json` ubicados en `configs/compositions/` o en cualquier carpeta de proyecto que se quiera versionar.
+Este formato describe cómo serializar una composición del modelo **Entity-Environment-Interaction** (EEI) que usa el editor. Está pensado para archivos `*.eei.json` ubicados en `game/configs/compositions/` o en cualquier carpeta de proyecto que se quiera versionar.
 
 ## Objetivos
 

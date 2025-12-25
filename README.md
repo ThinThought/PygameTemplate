@@ -61,11 +61,7 @@ El proyecto utiliza un modelo de diseño donde el juego se construye a partir de
 
 Este modelo permite una forma flexible y componible de construir lógicas de juego complejas.
 
-## Configuración
-
-### Ventana y Rendimiento
-
-Puedes ajustar la resolución de la pantalla, los FPS y otros ajustes generales en `configs/settings.toml`.
+puedes ajustar la resolución de la pantalla, los FPS y otros ajustes generales en `game/configs/settings.toml`.
 
 ```toml
 title = "Pygame Videogame Maker"
@@ -76,7 +72,7 @@ fps = 60
 
 ### Controles y Mandos
 
-Los mapeos de los mandos se definen en `configs/controllers/generic.toml`. Puedes editar este archivo para adaptar el juego a diferentes gamepads sin cambiar el código.
+Los mapeos de los mandos se definen en `game/configs/controllers/generic.toml`. Puedes editar este archivo para adaptar el juego a diferentes gamepads sin cambiar el código.
 
 ```toml
 # Ejemplo de mapeo de un botón
@@ -101,5 +97,5 @@ El proyecto incluye un script para recortar el espacio transparente sobrante en 
 
 ```bash
 # Recorta todas las imágenes en la carpeta de plataformas
-uv run python scripts/prune_pngs.py assets/images/platforms/grass_platforms
+uv run python scripts/prune_pngs.py game/assets/images/platforms/grass_platforms
 ```
