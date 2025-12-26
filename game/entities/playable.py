@@ -8,18 +8,18 @@ from game.entities.visible_mass import VisibleMassEntity
 
 
 class PlayableMassEntity(VisibleMassEntity, SpriteColliderMixin):
-    MAX_SPEED_X: float = 1.5  # m/s  (~140 px/s if PPM=100)
-    GROUND_ACCEL: float = 9.0  # m/s^2
-    AIR_ACCEL: float = 5.0  # m/s^2
+    DEFAULT_MAX_SPEED_X: float = 1.5  # m/s  (~140 px/s if PPM=100)
+    DEFAULT_GROUND_ACCEL: float = 9.0  # m/s^2
+    DEFAULT_AIR_ACCEL: float = 5.0  # m/s^2
 
-    GROUND_DAMPING: float = 10.0  # 1/s  (linear damping)
-    AIR_DAMPING: float = 2.0  # 1/s
+    DEFAULT_GROUND_DAMPING: float = 10.0  # 1/s  (linear damping)
+    DEFAULT_AIR_DAMPING: float = 2.0  # 1/s
 
     # Jump (2 seconds sustained thrust while holding)
-    JUMP_IMPULSE = 5.0  # m/s   ← ESTE es el que manda
-    JUMP_HOLD_ACCEL = 15.0  # m/s²
-    JUMP_HOLD_TIME = 0.05  # s
-    JOY_DEADZONE = 0.3
+    DEFAULT_JUMP_IMPULSE = 5.0  # m/s   ← ESTE es el que manda
+    DEFAULT_JUMP_HOLD_ACCEL = 15.0  # m/s²
+    DEFAULT_JUMP_HOLD_TIME = 0.05  # s
+    DEFAULT_JOY_DEADZONE = 0.3
 
     def __init__(
         self,
@@ -39,6 +39,16 @@ class PlayableMassEntity(VisibleMassEntity, SpriteColliderMixin):
             show_collider=show_collider,
             **kwargs,
         )
+
+        self.MAX_SPEED_X = self.DEFAULT_MAX_SPEED_X
+        self.GROUND_ACCEL = self.DEFAULT_GROUND_ACCEL
+        self.AIR_ACCEL = self.DEFAULT_AIR_ACCEL
+        self.GROUND_DAMPING = self.DEFAULT_GROUND_DAMPING
+        self.AIR_DAMPING = self.DEFAULT_AIR_DAMPING
+        self.JUMP_IMPULSE = self.DEFAULT_JUMP_IMPULSE
+        self.JUMP_HOLD_ACCEL = self.DEFAULT_JUMP_HOLD_ACCEL
+        self.JUMP_HOLD_TIME = self.DEFAULT_JUMP_HOLD_TIME
+        self.JOY_DEADZONE = self.DEFAULT_JOY_DEADZONE
 
         self._left = False
         self._right = False

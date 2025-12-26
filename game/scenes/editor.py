@@ -707,6 +707,12 @@ class EditorScene(Scene):
                     self.model.select_node(target_id)
                 self._delete_selected()
                 return True
+            if key == "move-up":
+                self.model.move_up(target_id)
+                return True
+            if key == "move-down":
+                self.model.move_down(target_id)
+                return True
             if key in {"add-before", "add-after"}:
                 before = key == "add-before"
                 if not self._context_menu_allowed_kinds(target_id):
@@ -805,6 +811,8 @@ class EditorScene(Scene):
         if allowed:
             items.append(("add-before", "Add Before..."))
             items.append(("add-after", "Add After..."))
+        items.append(("move-up", "Adelantar"))
+        items.append(("move-down", "Atrás"))
         items.append(("delete", "Delete"))
         return items
 

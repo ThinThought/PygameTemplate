@@ -335,6 +335,24 @@ class EditorModel:
         pos.x = max(left, min(right, desired.x))
         pos.y = max(top, min(bottom, desired.y))
 
+    def move_up(self, node_id: int) -> None:
+        """Mueve un nodo hacia adelante en el orden de renderizado (más tarde)."""
+        if node_id not in self._order:
+            return
+        idx = self._order.index(node_id)
+        if idx < len(self._order) - 1:
+            self._order.pop(idx)
+            self._order.insert(idx + 1, node_id)
+
+    def move_down(self, node_id: int) -> None:
+        """Mueve un nodo hacia atrás en el orden de renderizado (antes)."""
+        if node_id not in self._order:
+            return
+        idx = self._order.index(node_id)
+        if idx > 0:
+            self._order.pop(idx)
+            self._order.insert(idx - 1, node_id)
+
     # ---------- Eliminación ----------
 
     def delete_selected(self) -> None:

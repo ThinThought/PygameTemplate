@@ -9,7 +9,7 @@ class MassEntity(Entity):
     """Entidad física: inputs en metros, render en píxeles."""
 
     _MIN_MASS = 1e-4
-    PIXELS_PER_METER = 100.0  # escala global: 1m = 100px
+    DEFAULT_PIXELS_PER_METER = 100.0  # escala global: 1m = 100px
 
     def __init__(
         self,
@@ -20,6 +20,8 @@ class MassEntity(Entity):
     ) -> None:
         self.pos = pygame.Vector2(pos) if pos is not None else pygame.Vector2(0, 0)
         self.mass = max(self._MIN_MASS, float(mass))
+
+        self.PIXELS_PER_METER = self.DEFAULT_PIXELS_PER_METER
 
         # velocity interna en px/s
         self.velocity = (

@@ -17,14 +17,33 @@
   },
   "nodes": [
     {
-      "id": "env-008",
+      "id": "env-006",
+      "kind": "environment",
+      "type": "game.environments.background.BackgroundEnvironment",
+      "parent": null,
+      "transform": {
+        "position": [
+          593.3333333333334,
+          46.33333333333328
+        ]
+      },
+      "state": {
+        "layers": [
+          "/home/daiego/ThinThought/Repositories/PygameVideogameMaker/game/assets/images/backgrounds/bg1/bg_sky.png"
+        ],
+        "fill_color": "#0b0b0f"
+      },
+      "children": []
+    },
+    {
+      "id": "env-009",
       "kind": "environment",
       "type": "game.environments.music.MusicEnvironment",
       "parent": null,
       "transform": {
         "position": [
-          720.0,
-          77.0
+          377.6666666666667,
+          60.33333333333333
         ]
       },
       "state": {
@@ -33,25 +52,6 @@
         "loop": true,
         "fade_ms": 0,
         "stop_fade_ms": 0
-      },
-      "children": []
-    },
-    {
-      "id": "env-006",
-      "kind": "environment",
-      "type": "game.environments.background.BackgroundEnvironment",
-      "parent": null,
-      "transform": {
-        "position": [
-          720.0,
-          77.99999999999994
-        ]
-      },
-      "state": {
-        "layers": [
-          "/home/daiego/ThinThought/Repositories/PygameVideogameMaker/game/assets/images/backgrounds/bg1/bg_sky.png"
-        ],
-        "fill_color": "#0b0b0f"
       },
       "children": []
     },
@@ -72,7 +72,7 @@
       },
       "children": [
         "ent-027",
-        "ent-028",
+        "ent-032",
         "ent-029",
         "ent-030",
         "ent-031"
@@ -85,8 +85,8 @@
       "parent": "env-007",
       "transform": {
         "position": [
-          358.33333333333326,
-          333.33333333333337
+          360.0,
+          331.16279069767444
         ]
       },
       "state": {
@@ -101,18 +101,19 @@
       "children": []
     },
     {
-      "id": "ent-028",
+      "id": "ent-032",
       "kind": "entity",
       "type": "game.entities.spyke_player.SpykePlayer",
       "parent": "env-007",
       "transform": {
         "position": [
-          564.3333333333334,
-          346.33333333333337
+          509.3333333333334,
+          334.00000000000006
         ]
       },
       "state": {
         "mass": 1.0,
+        "PIXELS_PER_METER": 100.0,
         "velocity": [
           0.0,
           0.0
@@ -129,6 +130,15 @@
         "show_velocity": true,
         "show_label": true,
         "grounded": false,
+        "MAX_SPEED_X": 1.5,
+        "GROUND_ACCEL": 9.0,
+        "AIR_ACCEL": 5.0,
+        "GROUND_DAMPING": 10.0,
+        "AIR_DAMPING": 2.0,
+        "JUMP_IMPULSE": 5.0,
+        "JUMP_HOLD_ACCEL": 15.0,
+        "JUMP_HOLD_TIME": 0.05,
+        "JOY_DEADZONE": 0.3,
         "anim_tuning": {
           "idle_fps": 2.0,
           "walk_fps": 7.0,
@@ -142,6 +152,11 @@
             "land_hold_s": 0.08
           }
         },
+        "SPRITE_SCALE_FACTOR": 0.08,
+        "COLLIDER_SIZE": [
+          32,
+          60
+        ],
         "anim": null
       },
       "children": []
@@ -153,8 +168,8 @@
       "parent": "env-007",
       "transform": {
         "position": [
-          541.0,
-          170.6666666666666
+          192.04477611940302,
+          330.2437810945273
         ]
       },
       "state": {
@@ -175,8 +190,8 @@
       "parent": "env-007",
       "transform": {
         "position": [
-          155.99999999999991,
-          246.66666666666669
+          514.1343283582088,
+          163.75621890547265
         ]
       },
       "state": {
@@ -197,8 +212,8 @@
       "parent": "env-007",
       "transform": {
         "position": [
-          335.66666666666674,
-          361.0
+          123.02985074626878,
+          171.57213930348263
         ]
       },
       "state": {

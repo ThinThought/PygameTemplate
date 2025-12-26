@@ -161,8 +161,8 @@ class SpriteAnimator:
 
 class SpykePlayer(PlayableMassEntity):
     SPRITE_BASE = "images/pc/spyke"
-    SPRITE_SCALE_FACTOR = 0.10
-    COLLIDER_SIZE = (32, 60)
+    DEFAULT_SPRITE_SCALE_FACTOR = 0.08
+    DEFAULT_COLLIDER_SIZE = (32, 60)
 
     # cache preview por clase (barato y suficiente para editor)
     _preview_surface: pygame.Surface | None = None
@@ -178,6 +178,9 @@ class SpykePlayer(PlayableMassEntity):
     ) -> None:
         super().__init__(pos=pos, mass=mass, visible=True, show_collider=True, **kwargs)
         self.anim_tuning = anim_tuning or AnimTuning()
+
+        self.SPRITE_SCALE_FACTOR = self.DEFAULT_SPRITE_SCALE_FACTOR
+        self.COLLIDER_SIZE = self.DEFAULT_COLLIDER_SIZE
 
         self._left = False
         self._right = False
@@ -387,20 +390,19 @@ class SpykePlayer(PlayableMassEntity):
         except (FileNotFoundError, pygame.error):
             return None
 
-        if hasattr(cls, "SPRITE_SCALE_FACTOR") and cls.SPRITE_SCALE_FACTOR != 1.0:
-            scale_factor = cls.SPRITE_SCALE_FACTOR
+        if cls.DEFAULT_SPRITE_SCALE_FACTOR != 1.0:
+            scale_factor = cls.DEFAULT_SPRITE_SCALE_FACTOR
             original_size = surf.get_size()
             new_size = (
                 int(original_size[0] * scale_factor),
                 int(original_size[1] * scale_factor),
             )
 
-            if hasattr(cls, "COLLIDER_SIZE"):
-                min_size = cls.COLLIDER_SIZE
-                new_size = (
-                    max(new_size[0], min_size[0]),
-                    max(new_size[1], min_size[1]),
-                )
+            min_size = cls.DEFAULT_COLLIDER_SIZE
+            new_size = (
+                max(new_size[0], min_size[0]),
+                max(new_size[1], min_size[1]),
+            )
 
             if new_size != original_size:
                 surf = pygame.transform.smoothscale(surf, new_size)
