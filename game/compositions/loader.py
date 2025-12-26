@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass
 import importlib
 import json
 from pathlib import Path
@@ -219,6 +219,8 @@ def _apply_transform(
 
 def _apply_state(instance: Any, state: dict[str, Any]) -> None:
     for key, value in state.items():
+        if not hasattr(instance, key):
+            continue
         current = getattr(instance, key, None)
         coerced = _coerce_state_value(value, current)
         setattr(instance, key, coerced)
@@ -229,6 +231,15 @@ def _coerce_state_value(value: Any, current: Any) -> Any:
         vec = _vector_from(value)
         if vec is not None:
             return vec
+    if is_dataclass(current) and isinstance(value, dict):
+        for key, sub_value in value.items():
+            if not hasattr(current, key):
+                continue
+            sub_current = getattr(current, key)
+            coerced_sub = _coerce_state_value(sub_value, sub_current)
+            setattr(current, key, coerced_sub)
+        return current
+
     if isinstance(current, str):
         return value if isinstance(value, str) else current
     if (

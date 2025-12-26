@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, is_dataclass, asdict
 from pathlib import Path
 from typing import Any, Iterable, Literal
 
@@ -566,4 +566,6 @@ class EditorModel:
             return [self._coerce_state_value(v) for v in value]
         if isinstance(value, dict):
             return {str(k): self._coerce_state_value(v) for k, v in value.items()}
+        if is_dataclass(value) and not isinstance(value, type):
+            return asdict(value)
         return repr(value)

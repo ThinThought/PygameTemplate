@@ -17,14 +17,14 @@
   },
   "nodes": [
     {
-      "id": "env-003",
+      "id": "env-004",
       "kind": "environment",
       "type": "game.environments.force.ForceEnvironment",
       "parent": null,
       "transform": {
         "position": [
-          101.78313253012053,
-          72.48192771084338
+          795.7590361445782,
+          183.51807228915663
         ]
       },
       "state": {
@@ -32,25 +32,25 @@
         "auto_integrate": true
       },
       "children": [
-        "ent-005",
-        "ent-012"
+        "ent-018",
+        "ent-019"
       ]
     },
     {
-      "id": "ent-005",
+      "id": "ent-018",
       "kind": "entity",
-      "type": "game.entities.platforms.GrassFloorPlatform",
-      "parent": "env-003",
+      "type": "game.entities.platforms.GrassLargePlatform",
+      "parent": "env-004",
       "transform": {
         "position": [
-          505.8313253012048,
-          593.7349397590361
+          484.2409638554217,
+          482.69879518072287
         ]
       },
       "state": {
         "size": [
-          720.0,
-          160.0
+          300.0,
+          75.0
         ],
         "visible": true,
         "friction": 0.85,
@@ -59,10 +59,10 @@
       "children": []
     },
     {
-      "id": "ent-012",
+      "id": "ent-019",
       "kind": "entity",
       "type": "game.entities.spyke_player.SpykePlayer",
-      "parent": "env-003",
+      "parent": "env-004",
       "transform": {
         "position": [
           512.0,
@@ -87,6 +87,19 @@
         "show_velocity": true,
         "show_label": true,
         "grounded": false,
+        "anim_tuning": {
+          "idle_fps": 2.0,
+          "walk_fps": 7.0,
+          "deadzone_px": 2.0,
+          "jump": {
+            "takeoff_frame": 1,
+            "up_frame": 2,
+            "down_frame": 3,
+            "land_frame": 1,
+            "vy_threshold_px": 20.0,
+            "land_hold_s": 0.08
+          }
+        },
         "anim": null
       },
       "children": []

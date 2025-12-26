@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -22,12 +22,9 @@ class JumpPhases:
 @dataclass
 class AnimTuning:
     idle_fps: float = 2.0
-    walk_fps: float = 12.0
-    deadzone_px: float = 5.0
-    jump: JumpPhases = JumpPhases()
-
-
-SPYKE_ANIM_TUNING = AnimTuning()
+    walk_fps: float = 7.0
+    deadzone_px: float = 2.0
+    jump: JumpPhases = field(default_factory=JumpPhases)
 
 
 @dataclass
@@ -140,12 +137,12 @@ class SpriteAnimator:
         if state == self.state:
             return
 
-        if self.state and self.current_clip:
-            self.current_clip.reset()
-
         self.state = state
-        if self.current_clip:
-            self.current_clip.unfreeze()
+
+        clip = self.current_clip
+        if clip:
+            clip.reset()  # arranca limpio
+            clip.unfreeze()  # por si venía congelado
 
     def update(self, dt: float) -> None:
         if self.current_clip:
@@ -171,8 +168,16 @@ class SpykePlayer(PlayableMassEntity):
     _preview_surface: pygame.Surface | None = None
     _preview_loaded: bool = False
 
-    def __init__(self, pos=None, *, mass: float = 1.0, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        pos=None,
+        *,
+        mass: float = 1.0,
+        anim_tuning: AnimTuning | None = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(pos=pos, mass=mass, visible=True, show_collider=True, **kwargs)
+        self.anim_tuning = anim_tuning or AnimTuning()
 
         self._left = False
         self._right = False
@@ -186,6 +191,9 @@ class SpykePlayer(PlayableMassEntity):
         self._airborne_prev: bool = False
         self._land_hold_timer: float = 0.0
 
+        # NEW: “fuerza del jugador” (intención) para idle/walk
+        self._driving_x: bool = False
+
     def on_spawn(self, app: Any) -> None:
         super().on_spawn(app)
 
@@ -194,15 +202,16 @@ class SpykePlayer(PlayableMassEntity):
             scale_factor=self.SPRITE_SCALE_FACTOR,
             min_size=self.COLLIDER_SIZE,
         )
-        self.anim.load_clip("idle", fps=SPYKE_ANIM_TUNING.idle_fps, loop=True)
-        self.anim.load_clip("walk", fps=SPYKE_ANIM_TUNING.walk_fps, loop=True)
+        self.anim.load_clip("idle", fps=self.anim_tuning.idle_fps, loop=True)
+        self.anim.load_clip("walk", fps=self.anim_tuning.walk_fps, loop=True)
         self.anim.load_clip("jump", fps=0.0, loop=False) # Pose-based clip
+        self.anim.set_state("idle")
 
     def _start_jump(self) -> None:
         super()._start_jump()
         if self.anim:
             self.anim.set_state("jump")
-            self.anim.current_clip.set_frame(SPYKE_ANIM_TUNING.jump.takeoff_frame)
+            self.anim.current_clip.set_frame(self.anim_tuning.jump.takeoff_frame)
 
     def update(self, app: Any, dt: float) -> None:
         self._bind_runtime(app)
@@ -243,62 +252,83 @@ class SpykePlayer(PlayableMassEntity):
         self._apply_platform_collisions()
         super().update(app, dt)
 
-        if getattr(self, "grounded", False):
+        grounded_now = bool(getattr(self, "grounded", False))
+
+        if grounded_now:
             self._jump_time_left = 0.0
+            self.anim.set_state("idle")
             self._is_jumping = False
             if self.velocity.y > 0.0:
                 self.velocity.y = 0.0
-
         self._update_anim_state(dt)
-        self._airborne_prev = not grounded
 
     def _update_anim_state(self, dt: float) -> None:
-        if self.anim is None:
-            return
+            if self.anim is None:
+                return
 
-        # 1. Detect state transitions
-        grounded = bool(getattr(self, "grounded", False))
-        landed_this_frame = grounded and self._airborne_prev
+            grounded = bool(getattr(self, "grounded", False))
+            landed_this_frame = grounded and self._airborne_prev
 
-        if landed_this_frame:
-            self._land_hold_timer = SPYKE_ANIM_TUNING.jump.land_hold_s
+            # Timers (landing hold)
+            if landed_this_frame:
+                self._land_hold_timer = self.anim_tuning.jump.land_hold_s
 
-        # 2. Update timers
-        if self._land_hold_timer > 0:
-            self._land_hold_timer -= dt
+            if self._land_hold_timer > 0.0:
+                self._land_hold_timer = max(0.0, self._land_hold_timer - dt)
 
-        # 3. Determine facing direction
-        vx = self.velocity.x
-        if self._left and not self._right:
-            self.anim.facing = -1
-        elif self._right and not self._left:
-            self.anim.facing = 1
-        elif abs(vx) > SPYKE_ANIM_TUNING.deadzone_px:
-            self.anim.facing = 1 if vx > 0 else -1
+            ppm = float(getattr(self, "PIXELS_PER_METER", 100.0))
+            vx_px = float(self.velocity.x)
+            vy_px = float(self.velocity.y)
+            vx_mps = vx_px / ppm
+            vy_mps = vy_px / ppm
+            # print("ppm:", ppm, "vx_mps:", vx_mps, "vy_mps:", vy_mps)
 
-        # 4. Determine animation state and frame
-        if self._land_hold_timer > 0:
-            self.anim.set_state("jump")
-            self.anim.current_clip.set_frame(SPYKE_ANIM_TUNING.jump.land_frame)
-        elif not grounded:
-            self.anim.set_state("jump")
-            vy = self.velocity.y
-            jump_cfg = SPYKE_ANIM_TUNING.jump
-            if vy < -jump_cfg.vy_threshold_px:
-                self.anim.current_clip.set_frame(jump_cfg.up_frame)
-            elif vy > jump_cfg.vy_threshold_px:
-                self.anim.current_clip.set_frame(jump_cfg.down_frame)
-            else: # Apex or near-zero vy
-                self.anim.current_clip.set_frame(jump_cfg.up_frame)
+            # Facing (input first, otherwise by velocity)
+            if self._left and not self._right:
+                self.anim.facing = -1
+            elif self._right and not self._left:
+                self.anim.facing = 1
+            elif abs(vx_mps) >= 0.1:
+                self.anim.facing = 1 if vx_mps > 0 else -1
 
-        else: # Grounded and not in land-hold
-            if abs(vx) > SPYKE_ANIM_TUNING.deadzone_px:
-                self.anim.set_state("walk")
+            # ---- Rules ----
+            # Jump whenever moving upward (negative Y velocity)
+            # Walk when vx > 1.0 m/s OR vx < -0.1 m/s (as you stated)
+            WALK_POS_MPS = 1.0
+            WALK_NEG_MPS = -0.1
+
+            # Decide state (priority)
+            if grounded and self._land_hold_timer > 0.0:
+                desired_state = "jump"  # keep "landing pose" inside jump state (below)
+            elif grounded:
+                desired_state = "idle"
+            elif vy_mps < -0.01:
+                desired_state = "jump"
+            elif (vx_mps > WALK_POS_MPS) or (vx_mps < WALK_NEG_MPS):
+                desired_state = "walk"
             else:
-                self.anim.set_state("idle")
+                desired_state = "idle"
 
-        # 5. Update the animator with the final state
-        self.anim.update(dt)
+            self.anim.set_state(desired_state)
+
+            # Pose-based jump frames
+            if desired_state == "jump":
+                jump_cfg = self.anim_tuning.jump
+
+                if grounded and self._land_hold_timer > 0.0:
+                    self.anim.current_clip.set_frame(jump_cfg.land_frame)
+                else:
+                    # If you truly want: "jump always when vy negative"
+                    # then pose frames should also follow vy sign.
+                    if vy_px < 0.0:
+                        self.anim.current_clip.set_frame(jump_cfg.up_frame)
+                    elif vy_px > 0.0:
+                        self.anim.current_clip.set_frame(jump_cfg.down_frame)
+                    else:
+                        self.anim.current_clip.set_frame(jump_cfg.up_frame)
+
+        # walk/idle advance with fps; jump is frozen by set_frame()
+            self.anim.update(dt)
 
     def render(self, app, screen: pygame.Surface) -> None:
         if self.anim is not None:
