@@ -41,7 +41,7 @@ class GrassSmallPlatform(SpritePlatform):
         self,
         pos: pygame.Vector2 | tuple[float, float] | None = None,
         *,
-        show_collider: bool = True,
+        show_collider: bool = False,
         **platform_kwargs,
     ) -> None:
         super().__init__(pos, show_collider=show_collider, **platform_kwargs)
@@ -52,13 +52,13 @@ class GrassWidePlatform(SpritePlatform):
 
     SPRITE_PATH = "images/platforms/grass_platforms/medium1.png"
     RENDER_SIZE = (256, 72)
-    COLLIDER_SIZE = pygame.Vector2(230, 40)
+    COLLIDER_SIZE = pygame.Vector2(230, 50)
 
     def __init__(
         self,
         pos: pygame.Vector2 | tuple[float, float] | None = None,
         *,
-        show_collider: bool = True,
+        show_collider: bool = False,
         **platform_kwargs,
     ) -> None:
         super().__init__(pos, show_collider=show_collider, **platform_kwargs)
@@ -69,13 +69,13 @@ class GrassLargePlatform(SpritePlatform):
 
     SPRITE_PATH = "images/platforms/grass_platforms/large2.png"
     RENDER_SIZE = (320, 84)
-    COLLIDER_SIZE = pygame.Vector2(300, 75)
+    COLLIDER_SIZE = pygame.Vector2(300, 40)
 
     def __init__(
         self,
         pos: pygame.Vector2 | tuple[float, float] | None = None,
         *,
-        show_collider: bool = True,
+        show_collider: bool = False,
         **platform_kwargs,
     ) -> None:
         super().__init__(pos, show_collider=show_collider, **platform_kwargs)
@@ -85,13 +85,13 @@ class GrassFloorPlatform(SpritePlatform):
 
     SPRITE_PATH = "images/platforms/grass_platforms/floor.png"
     RENDER_SIZE = (720, 480)
-    COLLIDER_SIZE = pygame.Vector2(720, 160)
+    COLLIDER_SIZE = pygame.Vector2(720, 110)
 
     def __init__(
         self,
         pos: pygame.Vector2 | tuple[float, float] | None = None,
         *,
-        show_collider: bool = True,
+        show_collider: bool = False,
         **platform_kwargs,
     ) -> None:
         super().__init__(pos, show_collider=show_collider, **platform_kwargs)

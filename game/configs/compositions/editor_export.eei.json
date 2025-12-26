@@ -23,8 +23,8 @@
       "parent": null,
       "transform": {
         "position": [
-          795.0,
-          183.0
+          720.0,
+          77.99999999999994
         ]
       },
       "state": {
@@ -36,14 +36,14 @@
       "children": []
     },
     {
-      "id": "env-004",
+      "id": "env-007",
       "kind": "environment",
       "type": "game.environments.force.ForceEnvironment",
       "parent": null,
       "transform": {
         "position": [
-          795.7590361445782,
-          183.51807228915663
+          131.66666666666669,
+          59.999999999999986
         ]
       },
       "state": {
@@ -51,41 +51,44 @@
         "auto_integrate": true
       },
       "children": [
-        "ent-018",
-        "ent-019"
+        "ent-027",
+        "ent-028",
+        "ent-029",
+        "ent-030",
+        "ent-031"
       ]
     },
     {
-      "id": "ent-018",
+      "id": "ent-027",
       "kind": "entity",
-      "type": "game.entities.platforms.GrassLargePlatform",
-      "parent": "env-004",
+      "type": "game.entities.platforms.GrassFloorPlatform",
+      "parent": "env-007",
       "transform": {
         "position": [
-          367.574297188755,
-          333.33333333333337
+          359.9999999999999,
+          343.33333333333337
         ]
       },
       "state": {
         "size": [
-          300.0,
-          75.0
+          720.0,
+          110.0
         ],
-        "visible": true,
+        "visible": false,
         "friction": 0.85,
         "grip": 1.0
       },
       "children": []
     },
     {
-      "id": "ent-019",
+      "id": "ent-028",
       "kind": "entity",
       "type": "game.entities.spyke_player.SpykePlayer",
-      "parent": "env-004",
+      "parent": "env-007",
       "transform": {
         "position": [
-          383.6666666666667,
-          217.33333333333334
+          577.6666666666667,
+          349.66666666666674
         ]
       },
       "state": {
@@ -120,6 +123,72 @@
           }
         },
         "anim": null
+      },
+      "children": []
+    },
+    {
+      "id": "ent-029",
+      "kind": "entity",
+      "type": "game.entities.platforms.GrassLargePlatform",
+      "parent": "env-007",
+      "transform": {
+        "position": [
+          531.0,
+          132.33333333333326
+        ]
+      },
+      "state": {
+        "size": [
+          300.0,
+          40.0
+        ],
+        "visible": false,
+        "friction": 0.85,
+        "grip": 1.0
+      },
+      "children": []
+    },
+    {
+      "id": "ent-030",
+      "kind": "entity",
+      "type": "game.entities.platforms.GrassWidePlatform",
+      "parent": "env-007",
+      "transform": {
+        "position": [
+          132.6666666666666,
+          243.3333333333333
+        ]
+      },
+      "state": {
+        "size": [
+          230.0,
+          50.0
+        ],
+        "visible": false,
+        "friction": 0.85,
+        "grip": 1.0
+      },
+      "children": []
+    },
+    {
+      "id": "ent-031",
+      "kind": "entity",
+      "type": "game.entities.platforms.GrassSmallPlatform",
+      "parent": "env-007",
+      "transform": {
+        "position": [
+          395.6666666666667,
+          329.3333333333333
+        ]
+      },
+      "state": {
+        "size": [
+          175.0,
+          40.0
+        ],
+        "visible": false,
+        "friction": 0.85,
+        "grip": 1.0
       },
       "children": []
     }
