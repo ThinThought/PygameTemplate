@@ -7,8 +7,8 @@
   },
   "scene": {
     "canvas": [
-      1024,
-      768
+      720,
+      480
     ],
     "origin": [
       0,
@@ -16,6 +16,25 @@
     ]
   },
   "nodes": [
+    {
+      "id": "env-006",
+      "kind": "environment",
+      "type": "game.environments.background.BackgroundEnvironment",
+      "parent": null,
+      "transform": {
+        "position": [
+          795.0,
+          183.0
+        ]
+      },
+      "state": {
+        "layers": [
+          "/home/daiego/ThinThought/Repositories/PygameVideogameMaker/game/assets/images/backgrounds/bg1/bg_sky.png"
+        ],
+        "fill_color": "#0b0b0f"
+      },
+      "children": []
+    },
     {
       "id": "env-004",
       "kind": "environment",
@@ -43,8 +62,8 @@
       "parent": "env-004",
       "transform": {
         "position": [
-          484.2409638554217,
-          482.69879518072287
+          367.574297188755,
+          333.33333333333337
         ]
       },
       "state": {
@@ -65,8 +84,8 @@
       "parent": "env-004",
       "transform": {
         "position": [
-          512.0,
-          384.0
+          383.6666666666667,
+          217.33333333333334
         ]
       },
       "state": {
