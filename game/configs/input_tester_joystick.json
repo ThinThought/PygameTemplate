@@ -1,5 +1,35 @@
 {
-  "joysticks": [],
-  "active_index": null,
-  "active_joystick": null
+  "joysticks": [
+    {
+      "index": 0,
+      "name": "Xbox Series X Controller",
+      "axes": 6,
+      "buttons": 16,
+      "hats": 1
+    }
+  ],
+  "active_index": 0,
+  "active_joystick": {
+    "index": 0,
+    "name": "Xbox Series X Controller",
+    "axes": 6,
+    "axis_values": [
+      0.027618408203125,
+      0.027587890625,
+      0.006805419921875,
+      0.034576416015625,
+      -1.0,
+      -1.0
+    ],
+    "buttons": 16,
+    "buttons_pressed": [],
+    "hats": 1,
+    "hat_values": [
+      [
+        0,
+        0
+      ]
+    ],
+    "deadzone": 0.2
+  }
 }
